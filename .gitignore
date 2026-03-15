@@ -1,0 +1,25 @@
+# Virtual environment
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Sensitive registrant data — never commit
+registrants.csv
+
+# Generated output (large, regenerated each run)
+2026_MeetGreet_NameTags.pdf
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
