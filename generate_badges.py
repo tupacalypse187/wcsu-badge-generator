@@ -25,21 +25,21 @@ CIRCLE_R = 24   # pt radius
 #   pdfplumber top → rl bottom: rl_y = PAGE_H - pdfplumber_y
 BADGE_SLOTS = [
     # row 2 (top), col 0 (left)
-    {"cx": 153, "cy": 792 - 171, "text_top_rl": 792 - 227},
+    {"cx": 153, "cy": 792 - 171, "text_top_rl": 792 - 207},
     # row 2 (top), col 1 (right)
-    {"cx": 459, "cy": 792 - 171, "text_top_rl": 792 - 227},
+    {"cx": 459, "cy": 792 - 171, "text_top_rl": 792 - 207},
     # row 1 (mid), col 0
-    {"cx": 153, "cy": 792 - 397, "text_top_rl": 792 - 454},
+    {"cx": 153, "cy": 792 - 397, "text_top_rl": 792 - 434},
     # row 1 (mid), col 1
-    {"cx": 459, "cy": 792 - 397, "text_top_rl": 792 - 454},
+    {"cx": 459, "cy": 792 - 397, "text_top_rl": 792 - 434},
     # row 0 (bottom), col 0
-    {"cx": 153, "cy": 792 - 607, "text_top_rl": 792 - 668},
+    {"cx": 153, "cy": 792 - 607, "text_top_rl": 792 - 648},
     # row 0 (bottom), col 1
-    {"cx": 459, "cy": 792 - 607, "text_top_rl": 792 - 668},
+    {"cx": 459, "cy": 792 - 607, "text_top_rl": 792 - 648},
 ]
 
 LINE_LEADING = 20   # pt between text baselines
-TEXT_AREA_WIDTH = 275  # max text width within badge cell
+TEXT_AREA_WIDTH = 250  # max text width within badge cell (~28pt padding each side)
 
 # ── WCSU School colors ────────────────────────────────────────────────────────
 SCHOOL_COLORS = {
@@ -264,13 +264,13 @@ def generate_badges_pdf(registrants, template_png, output_pdf):
             c.setFillColor(HexColor("#1B3A6B"))
             type_y = name_y - LINE_LEADING
             wrap_and_draw(c, badge["type"], cx, type_y,
-                          TEXT_AREA_WIDTH, "Helvetica", 10, 12)
+                          TEXT_AREA_WIDTH, "Helvetica", 12, 14)
 
             # ── Occupation ────────────────────────────────────────────────
             c.setFillColor(HexColor("#333333"))
             occ_y = type_y - LINE_LEADING - 1
             wrap_and_draw(c, badge["occ"], cx, occ_y,
-                          TEXT_AREA_WIDTH, "Helvetica", 9, 10.5)
+                          TEXT_AREA_WIDTH, "Helvetica", 11, 13)
 
         c.showPage()
 
