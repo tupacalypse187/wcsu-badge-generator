@@ -296,12 +296,26 @@ def ensure_template_png(template_png, source_pdf, page_index=0, scale=3.0):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    import argparse
     _here = os.path.dirname(os.path.abspath(__file__))
 
-    csv_path      = os.path.join(_here, "data",     "registrants.csv")
-    source_pdf    = os.path.join(_here, "template", "badge_template.pdf")
-    template_png  = os.path.join(_here, "template", "template_blank.png")
-    output_pdf    = os.path.join(_here, "output",   "2026_MeetGreet_NameTags.pdf")
+    parser = argparse.ArgumentParser(
+        description="Generate WCSU name badge PDF from a registrants CSV."
+    )
+    parser.add_argument(
+        "--csv", default=os.path.join(_here, "data", "registrants.csv"),
+        help="Path to registrants CSV (default: data/registrants.csv)"
+    )
+    parser.add_argument(
+        "--output", default=os.path.join(_here, "output", "2026_MeetGreet_NameTags.pdf"),
+        help="Output PDF path (default: output/2026_MeetGreet_NameTags.pdf)"
+    )
+    args = parser.parse_args()
+
+    csv_path     = args.csv
+    output_pdf   = args.output
+    source_pdf   = os.path.join(_here, "template", "badge_template.pdf")
+    template_png = os.path.join(_here, "template", "template_blank.png")
 
     # Ensure output directory exists (gitignored, so not always present after a fresh clone)
     os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
