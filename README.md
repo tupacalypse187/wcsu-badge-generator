@@ -14,7 +14,7 @@
 
 ## 🎨 Color Legend
 
-Each badge displays a colored circle that identifies the attendee's WCSU school affiliation. Six colors are used in total:
+Each badge displays a colored circle identifying the attendee's WCSU school affiliation:
 
 | Color | School / Group | Hex |
 |---|---|---|
@@ -23,7 +23,7 @@ Each badge displays a colored circle that identifies the attendee's WCSU school 
 | 🟣 **Purple** | School of Visual & Performing Arts | `#8E44AD` |
 | 🟢 **Green** | School of Professional Studies | `#27AE60` |
 | 🟡 **Dark Gold** | Faculty / Staff | `#D4AC0D` |
-| ⬜ **Gray** | Community Guest | `#7F8C8D` |
+| ⬜ **Gray** | Community Guest / Unknown | `#7F8C8D` |
 
 ![Color Legend Grid](docs/badge_color_legend.png)
 
@@ -36,6 +36,7 @@ School assignment is **automatically detected** from the registrant's `Class / M
 ```
 wcsu-badge-generator/
 ├── generate_badges.py                        # 🐍 Main badge generation script
+├── convert_classlist.py                      # 🔄 Converts xlsx class rosters to badge CSV format
 ├── requirements.txt                          # 📦 Python dependencies
 ├── README.md                                 # 📖 This file
 ├── CLAUDE.md                                 # 🤖 AI assistant context file
@@ -62,10 +63,10 @@ wcsu-badge-generator/
 
 - Python 3.10 or higher
 - `pip` / `venv`
-- `template/badge_template.pdf` is committed to the repo — no manual setup needed
-- Place `registrants.csv` in the `data/` folder before running
+- `template/badge_template.pdf` is committed to the repo — no manual template setup needed
+- `openpyxl` is required only if using `convert_classlist.py` (included in `requirements.txt`)
 
-> **Note:** `template/template_blank.png` does **not** need to be committed or manually created. The script auto-generates it from the source PDF on first run. The `output/` folder is also created automatically if missing.
+> **Note:** `template/template_blank.png` is auto-generated from `badge_template.pdf` on first run. The `output/` folder is also created automatically if missing.
 
 ---
 
@@ -73,7 +74,7 @@ wcsu-badge-generator/
 
 ```bash
 # 1. Navigate to the project folder
-cd path/to/meetandgreet
+cd path/to/wcsu-badge-generator
 
 # 2. Create a virtual environment
 python3 -m venv .venv
@@ -85,7 +86,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # 5. Verify setup
-python3 -c "import reportlab, pypdfium2, PIL; print('✅ All dependencies ready')"
+python3 -c "import reportlab, pypdfium2, PIL, openpyxl; print('✅ All dependencies ready')"
 ```
 
 > **To deactivate** when done: `deactivate`
@@ -96,7 +97,7 @@ python3 -c "import reportlab, pypdfium2, PIL; print('✅ All dependencies ready'
 
 ```powershell
 # 1. Open PowerShell and navigate to the project folder
-cd C:\path\to\meetandgreet
+cd C:\path\to\wcsu-badge-generator
 
 # 2. Create a virtual environment
 python -m venv .venv
@@ -111,74 +112,128 @@ python -m venv .venv
 pip install -r requirements.txt
 
 # 5. Verify setup
-python -c "import reportlab, pypdfium2, PIL; print('All dependencies ready')"
+python -c "import reportlab, pypdfium2, PIL, openpyxl; print('All dependencies ready')"
 ```
 
 > **To deactivate** when done: `deactivate`
 
 ---
 
-## 🚀 Generating Badges
+## 🚀 Workflow 1 — Standard Event Run (Google Sheets CSV)
 
-Once the venv is active, simply run:
-
-```bash
-# macOS / Linux
-python3 generate_badges.py
-
-# Windows
-python generate_badges.py
-```
-
-The script will:
-1. Auto-render `template_blank.png` from the source PDF if it doesn't already exist
-2. Read and deduplicate `registrants.csv`
-3. Auto-detect each registrant's school from their `Class / Major` field
-4. Assign the appropriate circle color
-5. Generate `2026_MeetGreet_NameTags.pdf` — 6 badges per page
-
-**Expected output:**
-```
-Loaded 171 unique registrants
-✓ Generated 29 pages for 171 badges → output/2026_MeetGreet_NameTags.pdf
-```
-
----
-
-## 🔄 Runbook — Adding New Registrants Before the Event
-
-New people will register between now and **March 25, 2026**. Follow these steps each time you want to refresh the badge PDF:
+This is the main workflow for the Meet & Greet event registration list.
 
 ### Step 1 — Export the latest registrant data
 
 1. Open the Google Sheet: [WCSU Meet & Greet 2026 Registration](YOUR_GOOGLE_SHEET_URL)
 2. Go to **File → Download → Comma-separated values (.csv)**
-3. Save/replace the file as `data/registrants.csv` in this project folder
+3. Save/replace the file as `data/registrants.csv`
 
-### Step 2 — Activate the virtual environment
-
-```bash
-# macOS
-source .venv/bin/activate
-
-# Windows
-.venv\Scripts\Activate.ps1
-```
-
-### Step 3 — Run the generator
+### Step 2 — Generate badges
 
 ```bash
-python3 generate_badges.py   # macOS
-python generate_badges.py    # Windows
+python3 generate_badges.py
+# Output → output/2026_MeetGreet_NameTags.pdf
 ```
 
-### Step 4 — Print
+**Expected output:**
+```
+Loaded 175 unique registrants
+✓ Generated 30 pages for 175 badges → output/2026_MeetGreet_NameTags.pdf
+```
+
+### Step 3 — Print
 
 1. Open `output/2026_MeetGreet_NameTags.pdf`
 2. Print on **letter-size cardstock** (8.5" × 11")
 3. Cut along the grid lines — 6 badges per sheet
 
 > ⚠️ **Always regenerate from the latest CSV export** — the script replaces the full PDF each run, so old badges are never left in.
+
+---
+
+## 📋 Workflow 2 — Ad-hoc Class Roster from xlsx
+
+Use this when you receive a class list as an Excel file (e.g. from a professor or department) and need badges for those students only.
+
+### Step 1 — Convert the xlsx to badge CSV format
+
+```bash
+python3 convert_classlist.py data/ClassListACC306.xlsx \
+  --major "Accounting" \
+  --output data/acc306_badges.csv
+```
+
+**The `--major` flag controls the badge circle color.** Pass the right major so students get the correct school color. If you're unsure, leave it off — badges will show gray rather than a wrong color.
+
+| School | Example `--major` values |
+|---|---|
+| 🟠 Ancell (Orange) | `Accounting`, `Finance`, `Marketing`, `Management`, `MIS` |
+| 🔵 Arts & Sciences (Navy) | `Biology`, `Psychology`, `Nursing`, `Computer Science` |
+| 🟣 Visual & Performing Arts (Purple) | `Graphic Design`, `Theatre`, `Music`, `Digital Interactive Media` |
+| 🟢 Professional Studies (Green) | `Education`, `Health Administration`, `Counseling` |
+| 🟡 Faculty/Staff (Dark Gold) | Use `--reg-type Faculty/Staff` instead of `--major` |
+
+**Other useful flags:**
+```bash
+# Faculty roster for a specific school
+python3 convert_classlist.py data/FacultyList.xlsx \
+  --reg-type "Faculty/Staff" \
+  --org "School of Arts & Sciences" \
+  --output data/faculty_badges.csv
+
+# Custom output name
+python3 convert_classlist.py data/ClassListNUR201.xlsx \
+  --major "Nursing" \
+  --output data/nur201_badges.csv
+```
+
+### Step 2 — Generate badges for that CSV only
+
+```bash
+python3 generate_badges.py \
+  --csv data/acc306_badges.csv \
+  --output output/ACC306_NameTags.pdf
+```
+
+The xlsx must have `First Name` and `Last Name` columns (header row required, column order doesn't matter). Any additional columns like `Email` are used automatically if present.
+
+---
+
+## 🗂 Workflow 3 — Combine Multiple CSVs into One PDF
+
+Pass `--csv` multiple times to merge registrant lists from different sources into a single badge PDF. Duplicates are automatically removed across all files (matched by email, or first+last name if no email).
+
+### Example: event registrants + a class roster
+
+```bash
+python3 generate_badges.py \
+  --csv data/registrants.csv \
+  --csv data/acc306_badges.csv \
+  --output output/Combined_NameTags.pdf
+```
+
+**Expected output:**
+```
+  registrants.csv: 175 registrants
+  acc306_badges.csv: 28 registrants
+Loaded 203 unique registrants
+✓ Generated 34 pages for 203 badges → output/Combined_NameTags.pdf
+```
+
+### Example: multiple class rosters combined
+
+```bash
+# First convert each xlsx
+python3 convert_classlist.py data/ClassListACC306.xlsx --major "Accounting" --output data/acc306.csv
+python3 convert_classlist.py data/ClassListNUR201.xlsx --major "Nursing"    --output data/nur201.csv
+
+# Then combine into one PDF
+python3 generate_badges.py \
+  --csv data/acc306.csv \
+  --csv data/nur201.csv \
+  --output output/MultiClass_NameTags.pdf
+```
 
 ---
 

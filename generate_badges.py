@@ -165,20 +165,34 @@ def wrap_and_draw(c_obj, text, x, y, max_w, font_name, font_size, leading):
     return y
 
 # ── CSV parsing ───────────────────────────────────────────────────────────────
-def load_registrants(csv_path):
+def load_registrants(csv_paths):
+    """Load and deduplicate registrants from one or more CSV files.
+
+    csv_paths can be a single path string or a list of path strings.
+    Deduplication is global across all files — the same person won't
+    appear twice even if they're in multiple CSVs.
+    """
+    if isinstance(csv_paths, str):
+        csv_paths = [csv_paths]
+
     rows = []
     seen = set()
-    with open(csv_path, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            email = row["Email"].strip().lower()
-            fname = row["Attendee (First Name)"].strip()
-            lname = row["Attendee (Last Name)"].strip()
-            key = email if email else f"{fname.lower()}_{lname.lower()}"
-            if key in seen:
-                continue
-            seen.add(key)
-            rows.append(row)
+    for csv_path in csv_paths:
+        count_before = len(rows)
+        with open(csv_path, encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                email = row["Email"].strip().lower()
+                fname = row["Attendee (First Name)"].strip()
+                lname = row["Attendee (Last Name)"].strip()
+                key = email if email else f"{fname.lower()}_{lname.lower()}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(row)
+        added = len(rows) - count_before
+        if len(csv_paths) > 1:
+            print(f"  {os.path.basename(csv_path)}: {added} registrants")
     return rows
 
 def build_badge_data(row):
@@ -303,8 +317,10 @@ if __name__ == "__main__":
         description="Generate WCSU name badge PDF from a registrants CSV."
     )
     parser.add_argument(
-        "--csv", default=os.path.join(_here, "data", "registrants.csv"),
-        help="Path to registrants CSV (default: data/registrants.csv)"
+        "--csv", action="append", metavar="PATH",
+        help="Path to a registrants CSV. Repeat to merge multiple files: "
+             "--csv data/registrants.csv --csv data/acc306_badges.csv "
+             "(default: data/registrants.csv)"
     )
     parser.add_argument(
         "--output", default=os.path.join(_here, "output", "2026_MeetGreet_NameTags.pdf"),
@@ -312,8 +328,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    csv_path     = args.csv
-    output_pdf   = args.output
+    csv_paths  = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
+    output_pdf = args.output
     source_pdf   = os.path.join(_here, "template", "badge_template.pdf")
     template_png = os.path.join(_here, "template", "template_blank.png")
 
@@ -321,6 +337,6 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
 
     ensure_template_png(template_png, source_pdf)
-    registrants = load_registrants(csv_path)
+    registrants = load_registrants(csv_paths)
     print(f"Loaded {len(registrants)} unique registrants")
     generate_badges_pdf(registrants, template_png, output_pdf)
