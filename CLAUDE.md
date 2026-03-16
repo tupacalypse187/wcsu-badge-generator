@@ -11,10 +11,13 @@ This project auto-generates print-ready name badge PDFs for the **WCSU Alumni As
 | File | Purpose |
 |---|---|
 | `generate_badges.py` | Main script — reads CSV, maps schools, outputs PDF |
-| `registrants.csv` | Registrant data exported from Google Sheets |
+| `data/registrants.csv` | Registrant data exported from Google Sheets (gitignored — PII) |
 | `requirements.txt` | Python dependencies |
-| `2025 Meet & Greet Name Tags.pdf` | Source template — page index 2 (page 3) is the blank badge template used as the PDF background |
-| `2026_MeetGreet_NameTags.pdf` | Output — regenerated each run |
+| `template/badge_template.pdf` | Single-page blank badge template extracted from the original 54-page PDF (~140 KB, committed) |
+| `template/template_blank.png` | Rendered from source PDF on first run (gitignored — auto-generated) |
+| `output/2026_MeetGreet_NameTags.pdf` | Output — regenerated each run (gitignored) |
+| `docs/sample_badge.png` | Example badge image used in README |
+| `docs/badge_color_legend.png` | Color legend grid used in README |
 
 ---
 
@@ -22,23 +25,17 @@ This project auto-generates print-ready name badge PDFs for the **WCSU Alumni As
 
 ### PDF Generation Pipeline
 
-1. **`load_registrants(csv_path)`** — reads CSV with UTF-8-BOM encoding, deduplicates by email (or first+last name if no email)
-2. **`build_badge_data(row)`** — extracts name, class year, school, and occupation from each CSV row
-3. **`detect_school(major, org, reg_type)`** — keyword-matches to one of 4 WCSU schools or assigns Faculty/Community
-4. **`generate_badges_pdf(...)`** — uses reportlab to render 6 badges per page using the blank template PNG as background, then overlays colored circles and text
+1. **`ensure_template_png(template_png, source_pdf)`** — renders `template_blank.png` from page index 2 of the source PDF at 3× scale if the PNG doesn't already exist
+2. **`load_registrants(csv_path)`** — reads CSV with UTF-8-BOM encoding, deduplicates by email (or first+last name if no email)
+3. **`build_badge_data(row)`** — extracts name, class year, school, and occupation from each CSV row
+4. **`detect_school(major, org, reg_type)`** — keyword-matches to one of 4 WCSU schools or assigns Faculty/Community
+5. **`generate_badges_pdf(...)`** — uses reportlab to render 6 badges per page using the blank template PNG as background, then overlays colored circles and text
 
 ### Template Background
 
-The blank template is **page index 2** (third page) of `2025 Meet & Greet Name Tags.pdf`. It was pre-rendered to `template_blank.png` at 3× scale (1836×2376 px). This PNG is embedded as the background in each generated page via reportlab's `drawImage`.
+The blank template is `template/badge_template.pdf` — a single-page PDF extracted from page 3 of the original 54-page event file (~140 KB vs ~8.5 MB). It is rendered to `template_blank.png` at 3× scale (1836×2376 px) automatically by `ensure_template_png()` on first run (`page_index=0`). This PNG is embedded as the background in each generated page via reportlab's `drawImage`.
 
-The template is rendered once during the original setup. If the template PDF changes, re-render with:
-```python
-import pypdfium2 as pdfium
-pdf = pdfium.PdfDocument("2025 Meet & Greet Name Tags.pdf")
-page = pdf[2]
-bitmap = page.render(scale=3.0)
-bitmap.to_pil().save("template_blank.png")
-```
+`template_blank.png` does not need to be committed to the repo — it is regenerated automatically if missing. If the template changes, replace `badge_template.pdf` with the new single-page extract, delete `template_blank.png`, and re-run.
 
 ### Badge Layout (PDF points, reportlab origin = bottom-left)
 
@@ -54,15 +51,15 @@ Circle radius: 24 pt
 
 ### School Color Map
 
-| School key | School Name | Hex Color |
-|---|---|---|
-| `ancell` | Ancell School of Business | `#E8702A` |
-| `arts` | School of Arts & Sciences | `#1B3A6B` |
-| `visual` | School of Visual & Performing Arts | `#C0392B` |
-| `professional` | School of Professional Studies | `#27AE60` |
-| `faculty` | Faculty / Staff (no specific school) | `#2980B9` |
-| `community` | Community Guest | `#7F8C8D` |
-| `default` | Unmatched / ambiguous major | `#95A5A6` |
+| School key | School Name | Hex Color | Color Name |
+|---|---|---|---|
+| `ancell` | Ancell School of Business | `#E8702A` | Orange |
+| `arts` | School of Arts & Sciences | `#1B3A6B` | Navy |
+| `visual` | School of Visual & Performing Arts | `#8E44AD` | Purple |
+| `professional` | School of Professional Studies | `#27AE60` | Forest Green |
+| `faculty` | Faculty / Staff (no specific school) | `#D4AC0D` | Dark Gold |
+| `community` | Community Guest | `#7F8C8D` | Gray |
+| `default` | Unmatched / ambiguous major | `#95A5A6` | Light Gray |
 
 ---
 
@@ -86,8 +83,10 @@ The registrant CSV has these columns (note UTF-8-BOM header):
 
 ### Regenerate badges from updated CSV
 ```bash
-source .venv/bin/activate   # macOS
+source .venv/bin/activate        # macOS
+# Place latest export at data/registrants.csv first
 python3 generate_badges.py
+# Output → output/2026_MeetGreet_NameTags.pdf
 ```
 
 ### Fix a gray (unmatched) badge
@@ -118,7 +117,7 @@ Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` obj
 - **Multi-line occupations in CSV**: Newlines are collapsed; only the first segment is used.
 - **Very long names or titles**: `fit_text()` auto-scales down to a minimum of 8pt. `wrap_and_draw()` wraps at `TEXT_AREA_WIDTH`.
 - **Ambiguous majors** (e.g., `"BA"`, `"2019"`, typos): Assigned gray/default. Fix by updating `Class / Major` in the CSV.
-- **Faculty in specific schools**: If the org field contains `"Ancell"` or `"Professional Studies"`, they get that school's color instead of steel blue.
+- **Faculty in specific schools**: If the org field contains `"Ancell"` or `"Professional Studies"`, they get that school's color instead of dark gold.
 
 ---
 
@@ -135,5 +134,5 @@ Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` obj
 - **Event**: WCSU Alumni Association Meet & Greet
 - **Date**: March 25, 2026
 - **Organizer contact**: Career Success Center, WCSU
-- **Template source**: `2025 Meet & Greet Name Tags.pdf` (provided by event team)
+- **Template source**: `template/badge_template.pdf` (extracted from original 54-page event PDF, page 3)
 - **Registrant data source**: Google Sheets (exported as CSV before each print run)

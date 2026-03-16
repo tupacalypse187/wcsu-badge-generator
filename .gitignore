@@ -6,10 +6,20 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Sensitive registrant data — never commit
+# Sensitive registrant data — never commit (PII)
+data/*
+!data/.gitkeep
 registrants.csv
 
-# Generated output (large, regenerated each run)
+# Full source template PDF (54 pages, ~8.5 MB) — only badge_template.pdf is committed
+template/2025 Meet & Greet Name Tags.pdf
+
+# Auto-generated template render — rebuilt from badge_template.pdf on first run
+template/template_blank.png
+
+# Generated output — regenerated each run
+output/*
+!output/.gitkeep
 2026_MeetGreet_NameTags.pdf
 
 # macOS

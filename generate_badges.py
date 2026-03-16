@@ -43,11 +43,11 @@ TEXT_AREA_WIDTH = 250  # max text width within badge cell (~28pt padding each si
 
 # ── WCSU School colors ────────────────────────────────────────────────────────
 SCHOOL_COLORS = {
-    "ancell":       HexColor("#E8702A"),   # WCSU Orange — Ancell School of Business
-    "arts":         HexColor("#1B3A6B"),   # WCSU Navy   — School of Arts & Sciences
-    "visual":       HexColor("#C0392B"),   # Deep Red    — School of Visual & Performing Arts
+    "ancell":       HexColor("#E8702A"),   # WCSU Orange  — Ancell School of Business
+    "arts":         HexColor("#1B3A6B"),   # WCSU Navy    — School of Arts & Sciences
+    "visual":       HexColor("#8E44AD"),   # Purple       — School of Visual & Performing Arts
     "professional": HexColor("#27AE60"),   # Forest Green — School of Professional Studies
-    "faculty":      HexColor("#2980B9"),   # Steel Blue   — Faculty/Staff (no specific school)
+    "faculty":      HexColor("#D4AC0D"),   # Dark Gold    — Faculty/Staff (no specific school)
     "community":    HexColor("#7F8C8D"),   # Gray         — Community guests
     "default":      HexColor("#95A5A6"),   # Light gray   — unknown
 }
@@ -277,14 +277,36 @@ def generate_badges_pdf(registrants, template_png, output_pdf):
     c.save()
     print(f"✓ Generated {page_count} pages for {len(badges)} badges → {output_pdf}")
 
+# ── Template renderer ─────────────────────────────────────────────────────────
+def ensure_template_png(template_png, source_pdf, page_index=0, scale=3.0):
+    """Render template_blank.png from the source PDF if it doesn't exist."""
+    if os.path.exists(template_png) and os.path.getsize(template_png) > 0:
+        return
+    if not os.path.exists(source_pdf):
+        raise FileNotFoundError(
+            f"Template PNG not found and source PDF is missing: {source_pdf}\n"
+            "Place 'badge_template.pdf' in the template/ folder and re-run."
+        )
+    print(f"Rendering template from {os.path.basename(source_pdf)} (page {page_index + 1})...")
+    import pypdfium2 as pdfium
+    pdf = pdfium.PdfDocument(source_pdf)
+    bitmap = pdf[page_index].render(scale=scale)
+    bitmap.to_pil().save(template_png)
+    print(f"✓ Saved {os.path.basename(template_png)}")
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     _here = os.path.dirname(os.path.abspath(__file__))
 
-    csv_path      = os.path.join(_here, "registrants.csv")
-    template_png  = os.path.join(_here, "template_blank.png")
-    output_pdf    = os.path.join(_here, "2026_MeetGreet_NameTags.pdf")
+    csv_path      = os.path.join(_here, "data",     "registrants.csv")
+    source_pdf    = os.path.join(_here, "template", "badge_template.pdf")
+    template_png  = os.path.join(_here, "template", "template_blank.png")
+    output_pdf    = os.path.join(_here, "output",   "2026_MeetGreet_NameTags.pdf")
 
+    # Ensure output directory exists (gitignored, so not always present after a fresh clone)
+    os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
+
+    ensure_template_png(template_png, source_pdf)
     registrants = load_registrants(csv_path)
     print(f"Loaded {len(registrants)} unique registrants")
     generate_badges_pdf(registrants, template_png, output_pdf)

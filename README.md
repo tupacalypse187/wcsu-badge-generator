@@ -8,7 +8,7 @@
 
 ## 📛 Example Badge
 
-![Sample Badge](sample_badge.png)
+![Sample Badge](docs/sample_badge.png)
 
 ---
 
@@ -20,12 +20,12 @@ Each badge displays a colored circle that identifies the attendee's WCSU school 
 |---|---|---|
 | 🟠 **Orange** | Ancell School of Business | `#E8702A` |
 | 🔵 **Navy** | School of Arts & Sciences | `#1B3A6B` |
-| 🔴 **Red** | School of Visual & Performing Arts | `#C0392B` |
+| 🟣 **Purple** | School of Visual & Performing Arts | `#8E44AD` |
 | 🟢 **Green** | School of Professional Studies | `#27AE60` |
-| 🔵 **Steel Blue** | Faculty / Staff | `#2980B9` |
+| 🟡 **Dark Gold** | Faculty / Staff | `#D4AC0D` |
 | ⬜ **Gray** | Community Guest | `#7F8C8D` |
 
-![Color Legend Grid](badge_color_legend.png)
+![Color Legend Grid](docs/badge_color_legend.png)
 
 School assignment is **automatically detected** from the registrant's `Class / Major` and `Community Business/Organization` fields in the CSV. See [School Detection Logic](#-school-detection-logic) for details.
 
@@ -34,16 +34,26 @@ School assignment is **automatically detected** from the registrant's `Class / M
 ## 📁 Project Structure
 
 ```
-meetandgreet/
-├── generate_badges.py              # 🐍 Main badge generation script
-├── registrants.csv                 # 📋 Event registrant data (from Google Sheets export)
-├── requirements.txt                # 📦 Python dependencies
-├── 2025 Meet & Greet Name Tags.pdf # 🖼  Original badge template (do not modify)
-├── 2026_MeetGreet_NameTags.pdf     # ✅ Generated output — print this
-├── sample_badge.png                # 🖼  Example badge (for docs)
-├── badge_color_legend.png          # 🖼  Color legend grid (for docs)
-├── CLAUDE.md                       # 🤖 AI assistant context file
-└── README.md                       # 📖 This file
+wcsu-badge-generator/
+├── generate_badges.py                        # 🐍 Main badge generation script
+├── requirements.txt                          # 📦 Python dependencies
+├── README.md                                 # 📖 This file
+├── CLAUDE.md                                 # 🤖 AI assistant context file
+├── .gitignore
+│
+├── template/
+│   ├── badge_template.pdf                    # 🖼  Single-page blank badge template (committed, ~140 KB)
+│   └── template_blank.png                    # 🖼  Auto-generated on first run (gitignored)
+│
+├── data/
+│   └── registrants.csv                       # 📋 Registrant export from Google Sheets (gitignored — PII)
+│
+├── output/
+│   └── 2026_MeetGreet_NameTags.pdf           # ✅ Generated badge PDF — print this (gitignored)
+│
+└── docs/
+    ├── sample_badge.png                      # 🖼  Example badge (for README)
+    └── badge_color_legend.png                # 🖼  Color legend grid (for README)
 ```
 
 ---
@@ -52,7 +62,10 @@ meetandgreet/
 
 - Python 3.10 or higher
 - `pip` / `venv`
-- The original badge template PDF (`2025 Meet & Greet Name Tags.pdf`) must be present in the same directory
+- `template/badge_template.pdf` is committed to the repo — no manual setup needed
+- Place `registrants.csv` in the `data/` folder before running
+
+> **Note:** `template/template_blank.png` does **not** need to be committed or manually created. The script auto-generates it from the source PDF on first run. The `output/` folder is also created automatically if missing.
 
 ---
 
@@ -118,15 +131,16 @@ python generate_badges.py
 ```
 
 The script will:
-1. Read and deduplicate `registrants.csv`
-2. Auto-detect each registrant's school from their `Class / Major` field
-3. Assign the appropriate circle color
-4. Generate `2026_MeetGreet_NameTags.pdf` — 6 badges per page
+1. Auto-render `template_blank.png` from the source PDF if it doesn't already exist
+2. Read and deduplicate `registrants.csv`
+3. Auto-detect each registrant's school from their `Class / Major` field
+4. Assign the appropriate circle color
+5. Generate `2026_MeetGreet_NameTags.pdf` — 6 badges per page
 
 **Expected output:**
 ```
 Loaded 171 unique registrants
-✓ Generated 29 pages for 171 badges → 2026_MeetGreet_NameTags.pdf
+✓ Generated 29 pages for 171 badges → output/2026_MeetGreet_NameTags.pdf
 ```
 
 ---
@@ -139,7 +153,7 @@ New people will register between now and **March 25, 2026**. Follow these steps 
 
 1. Open the Google Sheet: [WCSU Meet & Greet 2026 Registration](YOUR_GOOGLE_SHEET_URL)
 2. Go to **File → Download → Comma-separated values (.csv)**
-3. Save/replace `registrants.csv` in this project folder
+3. Save/replace the file as `data/registrants.csv` in this project folder
 
 ### Step 2 — Activate the virtual environment
 
@@ -160,7 +174,7 @@ python generate_badges.py    # Windows
 
 ### Step 4 — Print
 
-1. Open `2026_MeetGreet_NameTags.pdf`
+1. Open `output/2026_MeetGreet_NameTags.pdf`
 2. Print on **letter-size cardstock** (8.5" × 11")
 3. Cut along the grid lines — 6 badges per sheet
 
