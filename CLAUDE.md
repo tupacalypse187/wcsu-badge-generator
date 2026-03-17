@@ -44,8 +44,10 @@ Each badge cell: 306 × 264 pt (2 columns × 3 rows)
 
 | Element | Left Col X | Right Col X | Row 1 Y | Row 2 Y | Row 3 Y |
 |---|---|---|---|---|---|
-| Circle center | 153 | 459 | 621 | 395 | 185 |
-| Name baseline | 153 | 459 | 565 | 338 | 124 |
+| Circle center | 162 | 450 | 621 | 395 | 185 |
+| Name baseline | 162 | 450 | 565 | 338 | 124 |
+
+Template has ~17.7pt left/right page margins; actual badge width is 288pt (not 306pt). Column centers are 162pt and 450pt, not the naive 153/459.
 
 Circle radius: 24 pt
 

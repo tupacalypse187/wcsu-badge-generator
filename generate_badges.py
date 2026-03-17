@@ -16,26 +16,28 @@ CELL_W = PAGE_W / 2          # 306
 CELL_H = PAGE_H / 3          # 264
 
 # Circle center (x from page left, y from page BOTTOM — reportlab convention)
-# Measured empirically from existing badge layout
 CIRCLE_R = 24   # pt radius
 
+# Template has ~17.7pt left/right margins and ~73pt top/bottom margins.
+# Actual badge content area: 576.3pt wide x 648pt tall → each badge 288.2pt x 216pt.
+# True column centers: left=161.8pt, right=449.9pt (rounded to 162 / 450).
+#
 # Per-cell: (x_center, y_circle_center_from_bottom, y_name_baseline)
-#   Columns: left=153, right=459
+#   Columns: left=162, right=450
 #   Rows (bottom-up): row0=bottom, row1=mid, row2=top
-#   pdfplumber top → rl bottom: rl_y = PAGE_H - pdfplumber_y
 BADGE_SLOTS = [
     # row 2 (top), col 0 (left)
-    {"cx": 153, "cy": 792 - 171, "text_top_rl": 792 - 207},
+    {"cx": 162, "cy": 792 - 171, "text_top_rl": 792 - 207},
     # row 2 (top), col 1 (right)
-    {"cx": 459, "cy": 792 - 171, "text_top_rl": 792 - 207},
+    {"cx": 450, "cy": 792 - 171, "text_top_rl": 792 - 207},
     # row 1 (mid), col 0
-    {"cx": 153, "cy": 792 - 397, "text_top_rl": 792 - 434},
+    {"cx": 162, "cy": 792 - 397, "text_top_rl": 792 - 434},
     # row 1 (mid), col 1
-    {"cx": 459, "cy": 792 - 397, "text_top_rl": 792 - 434},
+    {"cx": 450, "cy": 792 - 397, "text_top_rl": 792 - 434},
     # row 0 (bottom), col 0
-    {"cx": 153, "cy": 792 - 607, "text_top_rl": 792 - 648},
+    {"cx": 162, "cy": 792 - 607, "text_top_rl": 792 - 648},
     # row 0 (bottom), col 1
-    {"cx": 459, "cy": 792 - 607, "text_top_rl": 792 - 648},
+    {"cx": 450, "cy": 792 - 607, "text_top_rl": 792 - 648},
 ]
 
 LINE_LEADING = 20   # pt between text baselines
