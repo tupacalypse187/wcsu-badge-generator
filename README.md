@@ -61,7 +61,7 @@ wcsu-badge-generator/
 
 ## ⚙️ Prerequisites
 
-- Python 3.10–3.13 (Python 3.14+ is not yet supported by all dependencies)
+- Python 3.10–3.13 required — **3.13 recommended** (Python 3.14+ not yet supported by all dependencies)
 - `pip` / `venv`
 - `template/badge_template.pdf` is committed to the repo — no manual template setup needed
 - `openpyxl` is required only if using `convert_classlist.py` (included in `requirements.txt`)
@@ -95,7 +95,7 @@ python3 -c "import reportlab, pypdfium2, PIL, openpyxl; print('✅ All dependenc
 
 ## 🪟 Setup — Windows 11
 
-> **Important:** On Windows, `python` and `python3` may point to different installed versions. Run `python --version` first. If it shows **3.14 or higher**, use the Python Launcher (`py -3.11`) to create your venv instead — see the note below.
+> **Important:** On Windows, `python` may point to a newer version than what this project supports. Run `python --version` first. If it shows **3.14 or higher**, use the Python Launcher to target 3.13 (or 3.12/3.11) explicitly — see step 3 below.
 
 ```powershell
 # 1. Open PowerShell and navigate to the project folder
@@ -107,8 +107,8 @@ python --version
 # 3. Create a virtual environment
 #    If python --version shows 3.10–3.13, use:
 python -m venv .venv
-#    If python --version shows 3.14+, use the Python Launcher to target 3.11/3.12/3.13:
-#    py -3.11 -m venv .venv
+#    If python --version shows 3.14+, use the Python Launcher to target 3.13 (preferred), 3.12, or 3.11:
+#    py -3.13 -m venv .venv
 
 # 4. Activate the virtual environment
 .venv\Scripts\Activate.ps1
