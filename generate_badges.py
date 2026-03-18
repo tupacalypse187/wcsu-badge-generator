@@ -247,6 +247,12 @@ def generate_badges_pdf(registrants, template_png, output_pdf):
     template_img = ImageReader(template_png)
     c = canvas.Canvas(output_pdf, pagesize=letter)
 
+    # ── PDF metadata ──────────────────────────────────────────────────────────
+    c.setTitle("Meet and Greet Name Tags")
+    c.setAuthor("WCSU Alumni Association")
+    c.setSubject("WCSU Alumni Association Meet & Greet — March 25, 2026")
+    c.setCreator("WCSU Badge Generator")
+
     badges = [build_badge_data(r) for r in registrants]
 
     # 6 badges per page
