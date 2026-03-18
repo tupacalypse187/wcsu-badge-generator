@@ -61,7 +61,7 @@ wcsu-badge-generator/
 
 ## ⚙️ Prerequisites
 
-- Python 3.10 or higher
+- Python 3.10–3.13 (Python 3.14+ is not yet supported by all dependencies)
 - `pip` / `venv`
 - `template/badge_template.pdf` is committed to the repo — no manual template setup needed
 - `openpyxl` is required only if using `convert_classlist.py` (included in `requirements.txt`)
@@ -95,27 +95,37 @@ python3 -c "import reportlab, pypdfium2, PIL, openpyxl; print('✅ All dependenc
 
 ## 🪟 Setup — Windows 11
 
+> **Important:** On Windows, `python` and `python3` may point to different installed versions. Run `python --version` first. If it shows **3.14 or higher**, use the Python Launcher (`py -3.11`) to create your venv instead — see the note below.
+
 ```powershell
 # 1. Open PowerShell and navigate to the project folder
 cd C:\path\to\wcsu-badge-generator
 
-# 2. Create a virtual environment
-python -m venv .venv
+# 2. Check your Python version
+python --version
 
-# 3. Activate the virtual environment
+# 3. Create a virtual environment
+#    If python --version shows 3.10–3.13, use:
+python -m venv .venv
+#    If python --version shows 3.14+, use the Python Launcher to target 3.11/3.12/3.13:
+#    py -3.11 -m venv .venv
+
+# 4. Activate the virtual environment
 .venv\Scripts\Activate.ps1
 
 # If you get an execution policy error, run this first (once):
 # Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# 4. Install dependencies
+# 5. Install dependencies
 pip install -r requirements.txt
 
-# 5. Verify setup
+# 6. Verify setup
 python -c "import reportlab, pypdfium2, PIL, openpyxl; print('All dependencies ready')"
 ```
 
 > **To deactivate** when done: `deactivate`
+
+> **Tip:** To find which Python your system is using, run `where python` in PowerShell (the Windows equivalent of `which`).
 
 ---
 
