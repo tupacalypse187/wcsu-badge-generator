@@ -142,8 +142,11 @@ This is the main workflow for the Meet & Greet event registration list.
 ### Step 2 — Generate badges
 
 ```bash
+# macOS / Linux
 python3 generate_badges.py
-# Output → output/2026_MeetGreet_NameTags.pdf
+
+# Windows (PowerShell)
+python generate_badges.py
 ```
 
 **Expected output:**
@@ -169,8 +172,14 @@ Use this when you receive a class list as an Excel file (e.g. from a professor o
 ### Step 1 — Convert the xlsx to badge CSV format
 
 ```bash
+# macOS / Linux
 python3 convert_classlist.py data/ClassListACC306.xlsx \
   --major "Accounting" \
+  --output data/acc306_badges.csv
+
+# Windows (PowerShell — use backtick ` for line continuation)
+python convert_classlist.py data/ClassListACC306.xlsx `
+  --major "Accounting" `
   --output data/acc306_badges.csv
 ```
 
@@ -186,23 +195,30 @@ python3 convert_classlist.py data/ClassListACC306.xlsx \
 
 **Other useful flags:**
 ```bash
-# Faculty roster for a specific school
+# macOS / Linux
 python3 convert_classlist.py data/FacultyList.xlsx \
   --reg-type "Faculty/Staff" \
   --org "School of Arts & Sciences" \
   --output data/faculty_badges.csv
 
-# Custom output name
-python3 convert_classlist.py data/ClassListNUR201.xlsx \
-  --major "Nursing" \
-  --output data/nur201_badges.csv
+# Windows (PowerShell)
+python convert_classlist.py data/FacultyList.xlsx `
+  --reg-type "Faculty/Staff" `
+  --org "School of Arts & Sciences" `
+  --output data/faculty_badges.csv
 ```
 
 ### Step 2 — Generate badges for that CSV only
 
 ```bash
+# macOS / Linux
 python3 generate_badges.py \
   --csv data/acc306_badges.csv \
+  --output output/ACC306_NameTags.pdf
+
+# Windows (PowerShell)
+python generate_badges.py `
+  --csv data/acc306_badges.csv `
   --output output/ACC306_NameTags.pdf
 ```
 
@@ -217,9 +233,16 @@ Pass `--csv` multiple times to merge registrant lists from different sources int
 ### Example: event registrants + a class roster
 
 ```bash
+# macOS / Linux
 python3 generate_badges.py \
   --csv data/registrants.csv \
   --csv data/acc306_badges.csv \
+  --output output/Combined_NameTags.pdf
+
+# Windows (PowerShell)
+python generate_badges.py `
+  --csv data/registrants.csv `
+  --csv data/acc306_badges.csv `
   --output output/Combined_NameTags.pdf
 ```
 
@@ -234,14 +257,20 @@ Loaded 203 unique registrants
 ### Example: multiple class rosters combined
 
 ```bash
-# First convert each xlsx
+# macOS / Linux
 python3 convert_classlist.py data/ClassListACC306.xlsx --major "Accounting" --output data/acc306.csv
 python3 convert_classlist.py data/ClassListNUR201.xlsx --major "Nursing"    --output data/nur201.csv
-
-# Then combine into one PDF
 python3 generate_badges.py \
   --csv data/acc306.csv \
   --csv data/nur201.csv \
+  --output output/MultiClass_NameTags.pdf
+
+# Windows (PowerShell)
+python convert_classlist.py data/ClassListACC306.xlsx --major "Accounting" --output data/acc306.csv
+python convert_classlist.py data/ClassListNUR201.xlsx --major "Nursing"    --output data/nur201.csv
+python generate_badges.py `
+  --csv data/acc306.csv `
+  --csv data/nur201.csv `
   --output output/MultiClass_NameTags.pdf
 ```
 
