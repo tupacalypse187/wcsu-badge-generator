@@ -14,13 +14,26 @@ registrants.csv
 # Full source template PDF (54 pages, ~8.5 MB) — only badge_template.pdf is committed
 template/2025 Meet & Greet Name Tags.pdf
 
-# Auto-generated template render — rebuilt from badge_template.pdf on first run
+# Auto-generated template renders — rebuilt from source PDFs on first run
 template/template_blank.png
+template/avery_blank.png
+
+# Stray render copy at project root (belongs in template/)
+template_blank.png
 
 # Generated output — regenerated each run
 output/*
 !output/.gitkeep
 2026_MeetGreet_NameTags.pdf
+
+# Reference documents — not part of the code workflow
+*.flyer.pdf
+Alumni Meet and Greet 2026 - general flyer.pdf
+
+# Editor backup files
+~*
+*.bak
+*.saved.bak
 
 # macOS
 .DS_Store
