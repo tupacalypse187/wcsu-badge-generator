@@ -61,8 +61,13 @@ TEXT_AREA_WIDTH = 250  # max text width within badge cell (~28pt padding each si
 
 AVERY_BADGE_W  = 243.0      # pt — badge cell width
 AVERY_BADGE_H  = 167.976    # pt — badge cell height
-AVERY_HEADER_H = 40         # pt — colored school band at top of each badge
+AVERY_HEADER_H = 52         # pt — colored school band at top of each badge (holds name)
 AVERY_TEXT_W   = 218        # pt — max text width (243 − 2×12.5 side margins)
+
+# Logo: template/wcsu_aa_logo.png — 258×75 px RGBA, scaled to fit inside badge
+# Drawn at 185pt wide → height = 185 * (75/258) ≈ 54pt
+AVERY_LOGO_W = 185.0
+AVERY_LOGO_H = round(AVERY_LOGO_W * 75 / 258, 1)   # ≈ 53.8 pt
 
 # (cx, cell_top) pairs — cell_top is the reportlab y of the top edge of each badge.
 # Ordered top-to-bottom, left-to-right (same order as the physical sheet).
@@ -420,15 +425,23 @@ def generate_badges_pdf(registrants, template_png, output_pdf):
 
 
 # ── Avery 5395 adhesive badge generator ──────────────────────────────────────
-def generate_adhesive_badges_pdf(registrants, template_png, output_pdf):
+def generate_adhesive_badges_pdf(registrants, template_png, output_pdf, logo_png=None):
     """Generate Avery 5395 adhesive name badge PDF — 8 badges per page.
 
-    Each badge has a full-width colored header band (school color) at the top
-    with white WCSU / event text, and the name / school / occupation centered
-    in the white area below. No separate artwork template is needed — the Avery
-    cut-guide PDF is used only as the page background (thin outlines).
+    Layout (top → bottom within each 243×168pt cell):
+      ┌──────────────────────────────────────┐
+      │  [School-color header band, 52pt]    │
+      │  Alumni Meet & Greet 2026  (7.5pt)  │
+      │  First Last  (bold, white, ~15pt)   │
+      ├──────────────────────────────────────┤
+      │  [WCSU Alumni Association logo]      │
+      │  Student · Ancell School of Business │  ← 11pt
+      │  Occupation Title                    │  ← 10pt
+      └──────────────────────────────────────┘
     """
     template_img = ImageReader(template_png)
+    logo_img     = ImageReader(logo_png) if logo_png and os.path.exists(logo_png) else None
+
     c = canvas.Canvas(output_pdf, pagesize=letter)
 
     # ── PDF metadata ──────────────────────────────────────────────────────────
@@ -456,39 +469,48 @@ def generate_adhesive_badges_pdf(registrants, template_png, output_pdf):
 
             # ── Colored header band ───────────────────────────────────────────
             c.setFillColor(badge["color"])
-            c.setStrokeColor(badge["color"])
             c.rect(x0, cell_top - AVERY_HEADER_H,
                    AVERY_BADGE_W, AVERY_HEADER_H, fill=1, stroke=0)
 
-            # ── Header text (white) ───────────────────────────────────────────
+            # ── "Alumni Meet & Greet 2026" — top of header, white ────────────
             c.setFillColor(white)
-            c.setFont("Helvetica-Bold", 11)
-            c.drawCentredString(cx, cell_top - 17, "WCSU")
             c.setFont("Helvetica", 7.5)
-            c.drawCentredString(cx, cell_top - 30, "Alumni Meet & Greet 2026")
+            c.drawCentredString(cx, cell_top - 12, "Alumni Meet & Greet 2026")
 
-            # ── Name ─────────────────────────────────────────────────────────
-            # Vertically center the content block in the white area below the band.
-            # Content block height ≈ 14 (name) + 17 (school leading) + 15 (occ leading) = 46 pt
-            # White area = AVERY_BADGE_H − AVERY_HEADER_H ≈ 128 pt
-            # Top padding = (128 − 46) / 2 ≈ 41 pt → name baseline at cell_top − 40 − 41 − 0
-            # (subtract font ascender ~14 to land baseline where text visually centers)
-            name_y = cell_top - AVERY_HEADER_H - 55   # ≈ center of white area
-            c.setFillColor(HexColor("#1B3A6B"))
-            fit_text(c, badge["name"], cx, name_y,
-                     AVERY_TEXT_W, "Helvetica-Bold", max_size=14, min_size=7)
+            # ── Attendee name — lower part of header, white bold ─────────────
+            c.setFillColor(white)
+            fit_text(c, badge["name"], cx, cell_top - 33,
+                     AVERY_TEXT_W, "Helvetica-Bold", max_size=15, min_size=7)
+
+            # ── Logo (WCSU Alumni Association) — top of white area ────────────
+            # Vertically, logo sits just below the header; school/occ text below it.
+            # White area height: AVERY_BADGE_H − AVERY_HEADER_H ≈ 116pt
+            # Logo: AVERY_LOGO_W × AVERY_LOGO_H ≈ 185×54pt, centered on cx.
+            # Positions from cell_top:
+            #   logo top    = −62  (10pt gap from header bottom)
+            #   logo bottom = −62 − AVERY_LOGO_H
+            #   type  base  = logo_bottom − 7
+            #   occ   base  = type_base  − 16
+            logo_top_y = cell_top - AVERY_HEADER_H - 10          # top of logo (reportlab y)
+            logo_btm_y = logo_top_y - AVERY_LOGO_H               # bottom of logo (reportlab y)
+            logo_x     = cx - AVERY_LOGO_W / 2
+
+            if logo_img:
+                c.drawImage(logo_img, logo_x, logo_btm_y,
+                            width=AVERY_LOGO_W, height=AVERY_LOGO_H,
+                            mask="auto", preserveAspectRatio=True)
 
             # ── School / type line ────────────────────────────────────────────
-            type_y = name_y - 17
+            type_y = logo_btm_y - 8
             c.setFillColor(HexColor("#1B3A6B"))
             wrap_and_draw(c, badge["type"], cx, type_y,
-                          AVERY_TEXT_W, "Helvetica", 9, 11)
+                          AVERY_TEXT_W, "Helvetica", 11, 13)
 
             # ── Occupation ────────────────────────────────────────────────────
-            occ_y = type_y - 14
+            occ_y = type_y - 16
             c.setFillColor(HexColor("#444444"))
             wrap_and_draw(c, badge["occ"], cx, occ_y,
-                          AVERY_TEXT_W, "Helvetica", 8.5, 10)
+                          AVERY_TEXT_W, "Helvetica", 10, 12)
 
         c.showPage()
 
@@ -611,7 +633,8 @@ Both formats can be mixed using multiple --csv flags.
         avery_source_pdf = os.path.join(_here, "docs", "Avery5395AdhesiveNameBadges.pdf")
         avery_png        = os.path.join(_here, "template", "avery_blank.png")
         ensure_template_png(avery_png, avery_source_pdf)
-        generate_adhesive_badges_pdf(registrants, avery_png, output_pdf)
+        logo_png = os.path.join(_here, "template", "wcsu_aa_logo.png")
+        generate_adhesive_badges_pdf(registrants, avery_png, output_pdf, logo_png=logo_png)
     else:
         paper_source_pdf = os.path.join(_here, "template", "badge_template.pdf")
         paper_png        = os.path.join(_here, "template", "template_blank.png")
