@@ -1,5 +1,5 @@
 """
-WCSU Alumni Meet & Greet 2026 — Name Badge Generator
+WCSU Meet & Greet 2026 — Name Badge Generator
 Reads registrants.csv and produces a print-ready PDF.
 
 Two badge formats supported (--type flag):
@@ -431,7 +431,7 @@ def generate_adhesive_badges_pdf(registrants, template_png, output_pdf, logo_png
     Layout (top → bottom within each 243×168pt cell):
       ┌──────────────────────────────────────┐
       │  [School-color header band, 52pt]    │
-      │  Alumni Meet & Greet 2026  (7.5pt)  │
+      │  Meet & Greet 2026  (9pt)    │
       │  First Last  (bold, white, ~15pt)   │
       ├──────────────────────────────────────┤
       │  [WCSU Alumni Association logo]      │
@@ -472,10 +472,10 @@ def generate_adhesive_badges_pdf(registrants, template_png, output_pdf, logo_png
             c.rect(x0, cell_top - AVERY_HEADER_H,
                    AVERY_BADGE_W, AVERY_HEADER_H, fill=1, stroke=0)
 
-            # ── "Alumni Meet & Greet 2026" — top of header, white ────────────
+            # ── "Meet & Greet 2026" — top of header, white ────────────
             c.setFillColor(white)
             c.setFont("Helvetica", 9)
-            c.drawCentredString(cx, cell_top - 13, "Alumni Meet & Greet 2026")
+            c.drawCentredString(cx, cell_top - 13, "Meet & Greet 2026")
 
             # ── Attendee name — lower part of header, white bold ─────────────
             c.setFillColor(white)
