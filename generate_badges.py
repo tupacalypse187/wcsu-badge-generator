@@ -166,11 +166,72 @@ def wrap_and_draw(c_obj, text, x, y, max_w, font_name, font_size, leading):
         y -= leading
     return y
 
+# ── CSV format detection & normalization ──────────────────────────────────────
+# Two supported CSV formats are auto-detected by their column headers.
+#
+# Format A — Event registrant export (e.g. Eventbrite / Google Sheets):
+#   Required columns:
+#     • Attendee (First Name)
+#     • Attendee (Last Name)
+#     • Registration Options   (Alumni / Faculty/Staff / Student / Community)
+#     • Class / Major
+#   Optional columns (leave blank if unknown):
+#     • Email                         — used for deduplication
+#     • Community Business/Organization
+#     • Occupation / Position Title
+#
+# Format B — Class roster / simple list:
+#   Required columns:
+#     • First Name
+#     • Last Name
+#     • Registration Options   (Alumni / Faculty/Staff / Student / Community)
+#     • Class / Major
+#   (No email, org, or occupation columns needed)
+
+def _detect_format(fieldnames):
+    """Return 'event' or 'classlist' based on CSV column headers."""
+    cols = {c.strip() for c in fieldnames}
+    if "Attendee (First Name)" in cols:
+        return "event"
+    if "First Name" in cols and "Last Name" in cols:
+        return "classlist"
+    raise ValueError(
+        f"Unrecognized CSV format. Found columns: {sorted(cols)}\n"
+        "Expected either 'Attendee (First Name)' (event export) or "
+        "'First Name' + 'Last Name' (class roster)."
+    )
+
+def _normalize_row(row, fmt):
+    """Convert any supported row format to the canonical internal dict."""
+    if fmt == "event":
+        return {
+            "Attendee (First Name)":         row.get("Attendee (First Name)", "").strip(),
+            "Attendee (Last Name)":          row.get("Attendee (Last Name)", "").strip(),
+            "Registration Options":          row.get("Registration Options", "").strip(),
+            "Class / Major":                 row.get("Class / Major", "").strip(),
+            "Community Business/Organization": row.get("Community Business/Organization", "").strip(),
+            "Occupation / Position Title":   row.get("Occupation / Position Title", "").strip(),
+            "Email":                         row.get("Email", "").strip().lower(),
+        }
+    else:  # classlist
+        return {
+            "Attendee (First Name)":         row.get("First Name", "").strip(),
+            "Attendee (Last Name)":          row.get("Last Name", "").strip(),
+            "Registration Options":          row.get("Registration Options", "").strip(),
+            "Class / Major":                 row.get("Class / Major", "").strip(),
+            "Community Business/Organization": "",
+            "Occupation / Position Title":   "",
+            "Email":                         "",
+        }
+
 # ── CSV parsing ───────────────────────────────────────────────────────────────
 def load_registrants(csv_paths):
     """Load and deduplicate registrants from one or more CSV files.
 
     csv_paths can be a single path string or a list of path strings.
+    Both CSV formats are accepted and can be mixed across files:
+      - Event export (columns: Attendee (First Name), Attendee (Last Name), …)
+      - Class roster (columns: First Name, Last Name, …)
     Deduplication is global across all files — the same person won't
     appear twice even if they're in multiple CSVs.
     """
@@ -183,18 +244,20 @@ def load_registrants(csv_paths):
         count_before = len(rows)
         with open(csv_path, encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                email = row["Email"].strip().lower()
-                fname = row["Attendee (First Name)"].strip()
-                lname = row["Attendee (Last Name)"].strip()
+            fmt = _detect_format(reader.fieldnames or [])
+            print(f"  {os.path.basename(csv_path)}: detected format '{fmt}'")
+            for raw in reader:
+                row = _normalize_row(raw, fmt)
+                email = row["Email"]
+                fname = row["Attendee (First Name)"]
+                lname = row["Attendee (Last Name)"]
                 key = email if email else f"{fname.lower()}_{lname.lower()}"
                 if key in seen:
                     continue
                 seen.add(key)
                 rows.append(row)
         added = len(rows) - count_before
-        if len(csv_paths) > 1:
-            print(f"  {os.path.basename(csv_path)}: {added} registrants")
+        print(f"  {os.path.basename(csv_path)}: {added} registrants added")
     return rows
 
 def build_badge_data(row):
@@ -322,13 +385,43 @@ if __name__ == "__main__":
     _here = os.path.dirname(os.path.abspath(__file__))
 
     parser = argparse.ArgumentParser(
-        description="Generate WCSU name badge PDF from a registrants CSV."
+        description="Generate WCSU name badge PDF from one or more CSVs.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+CSV FORMAT REFERENCE
+--------------------
+Two CSV layouts are auto-detected by their column headers.
+
+Format A — Event registrant export (e.g. Eventbrite / Google Sheets):
+  Required columns:
+    Attendee (First Name)         First name
+    Attendee (Last Name)          Last name
+    Registration Options          Alumni / Student / Faculty/Staff / Community
+    Class / Major                 Major, org, or graduation year
+  Optional columns (blank is fine if not available):
+    Email                         Used for deduplication (preferred over name)
+    Community Business/Organization  Shown on badge for community/faculty guests
+    Occupation / Position Title   Third line on badge
+
+Format B — Class roster / simple list (e.g. exported grade book):
+  Required columns:
+    First Name
+    Last Name
+    Registration Options          Alumni / Student / Faculty/Staff / Community
+    Class / Major                 Major or school name (e.g. "Ancell School of Business")
+  (No Email, Organization, or Occupation columns needed)
+
+Both formats can be mixed using multiple --csv flags.
+        """
     )
     parser.add_argument(
         "--csv", action="append", metavar="PATH",
-        help="Path to a registrants CSV. Repeat to merge multiple files: "
-             "--csv data/registrants.csv --csv data/acc306_badges.csv "
-             "(default: data/registrants.csv)"
+        help=(
+            "Path to a registrants CSV (Format A: event export, or "
+            "Format B: class roster). Repeat to merge multiple files: "
+            "--csv data/registrants.csv --csv data/acc306.csv "
+            "(default: data/registrants.csv). Run with --help for column details."
+        )
     )
     parser.add_argument(
         "--output", default=os.path.join(_here, "output", "2026_MeetGreet_NameTags.pdf"),
