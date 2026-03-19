@@ -161,16 +161,19 @@ def detect_school(major, org, reg_type):
     return "default"
 
 # ── Class year extraction ─────────────────────────────────────────────────────
-def extract_year(text):
-    """Pull a 2- or 4-digit graduation year from the class/major string."""
-    m = re.search(r"'(\d{2})\b", text)
-    if m:
+def extract_years(text):
+    """Return all graduation years found in text as sorted 2-digit strings.
+
+    Handles both apostrophe-style ('71, '98) and 4-digit (1971, 1998) formats.
+    Returns e.g. ['71', '98'] for a double-degree alumna like Lois '71 & '98.
+    """
+    found = set()
+    for m in re.finditer(r"'(\d{2})\b", text):
         y = int(m.group(1))
-        return f"20{y:02d}" if y <= 26 else f"19{y:02d}"
-    m = re.search(r"\b(19\d{2}|20\d{2})\b", text)
-    if m:
-        return m.group(1)
-    return None
+        found.add(f"20{y:02d}" if y <= 26 else f"19{y:02d}")
+    for m in re.finditer(r"\b(19\d{2}|20\d{2})\b", text):
+        found.add(m.group(1))
+    return [yr[2:] for yr in sorted(found)]
 
 # ── Text helpers ──────────────────────────────────────────────────────────────
 def fit_text(c_obj, text, x, y, max_w, font_name, max_size=14, min_size=7):
@@ -330,10 +333,14 @@ def build_badge_data(row):
     title = row["Occupation / Position Title"].strip()
 
     # ── Name line ──────────────────────────────────────────────────────────
-    year = extract_year(major)
-    if reg == "Alumni" and year:
-        suffix = f" '{year[2:]}"
-        name_line = f"{fname} {lname}{suffix}"
+    years = extract_years(major)
+    if reg == "Alumni" and years:
+        # Format: '71  /  '71 & '98  /  '71, '98 & '04
+        if len(years) == 1:
+            year_str = f"'{years[0]}"
+        else:
+            year_str = ", ".join(f"'{y}" for y in years[:-1]) + f" & '{years[-1]}"
+        name_line = f"{fname} {lname} {year_str}"
     else:
         name_line = f"{fname} {lname}"
 
