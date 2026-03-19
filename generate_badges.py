@@ -188,6 +188,23 @@ def wrap_and_draw(c_obj, text, x, y, max_w, font_name, font_size, leading):
 #     • Class / Major
 #   (No email, org, or occupation columns needed)
 
+# Patterns treated as "no value" — collapsed to empty string during normalization
+_NA_VALUES = {"n/a", "na", "n.a.", "n.a", "none", "null", "-", "--", "---",
+              "not available", "not applicable", "unknown", "tbd", "tba"}
+
+def _clean(value, fallback=""):
+    """Strip whitespace and collapse N/A-like sentinel values to empty string.
+
+    Args:
+        value:    Raw cell value from the CSV row.
+        fallback: Returned instead of "" when the cleaned value is empty
+                  (use "Guest" for name fields that should never be blank).
+    """
+    v = (value or "").strip()
+    if v.lower() in _NA_VALUES:
+        v = ""
+    return v if v else fallback
+
 def _detect_format(fieldnames):
     """Return 'event' or 'classlist' based on CSV column headers."""
     cols = {c.strip() for c in fieldnames}
@@ -202,26 +219,31 @@ def _detect_format(fieldnames):
     )
 
 def _normalize_row(row, fmt):
-    """Convert any supported row format to the canonical internal dict."""
+    """Convert any supported row format to the canonical internal dict.
+
+    All values are passed through _clean() so N/A-like sentinels
+    (e.g. 'N/A', 'NA', 'None', '-') become empty strings.
+    Name fields use fallback='Guest' so a badge is never entirely blank.
+    """
     if fmt == "event":
         return {
-            "Attendee (First Name)":         row.get("Attendee (First Name)", "").strip(),
-            "Attendee (Last Name)":          row.get("Attendee (Last Name)", "").strip(),
-            "Registration Options":          row.get("Registration Options", "").strip(),
-            "Class / Major":                 row.get("Class / Major", "").strip(),
-            "Community Business/Organization": row.get("Community Business/Organization", "").strip(),
-            "Occupation / Position Title":   row.get("Occupation / Position Title", "").strip(),
-            "Email":                         row.get("Email", "").strip().lower(),
+            "Attendee (First Name)":           _clean(row.get("Attendee (First Name)"), fallback="Guest"),
+            "Attendee (Last Name)":            _clean(row.get("Attendee (Last Name)")),
+            "Registration Options":            _clean(row.get("Registration Options")),
+            "Class / Major":                   _clean(row.get("Class / Major")),
+            "Community Business/Organization": _clean(row.get("Community Business/Organization")),
+            "Occupation / Position Title":     _clean(row.get("Occupation / Position Title")),
+            "Email":                           _clean(row.get("Email", "")).lower(),
         }
     else:  # classlist
         return {
-            "Attendee (First Name)":         row.get("First Name", "").strip(),
-            "Attendee (Last Name)":          row.get("Last Name", "").strip(),
-            "Registration Options":          row.get("Registration Options", "").strip(),
-            "Class / Major":                 row.get("Class / Major", "").strip(),
+            "Attendee (First Name)":           _clean(row.get("First Name"), fallback="Guest"),
+            "Attendee (Last Name)":            _clean(row.get("Last Name")),
+            "Registration Options":            _clean(row.get("Registration Options")),
+            "Class / Major":                   _clean(row.get("Class / Major")),
             "Community Business/Organization": "",
-            "Occupation / Position Title":   "",
-            "Email":                         "",
+            "Occupation / Position Title":     "",
+            "Email":                           "",
         }
 
 # ── CSV parsing ───────────────────────────────────────────────────────────────
@@ -424,13 +446,34 @@ Both formats can be mixed using multiple --csv flags.
         )
     )
     parser.add_argument(
-        "--output", default=os.path.join(_here, "output", "2026_MeetGreet_NameTags.pdf"),
-        help="Output PDF path (default: output/2026_MeetGreet_NameTags.pdf)"
+        "--name", metavar="FILENAME",
+        help=(
+            "Output filename only — saved to the output/ folder automatically. "
+            "A .pdf extension is added if omitted. "
+            "Example: --name ACC306_Badges  →  output/ACC306_Badges.pdf"
+        )
+    )
+    parser.add_argument(
+        "--output", metavar="PATH",
+        help=(
+            "Full output path including directory "
+            "(default: output/2026_MeetGreet_NameTags.pdf). "
+            "Use --name instead if you just want a custom filename in output/."
+        )
     )
     args = parser.parse_args()
 
-    csv_paths  = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
-    output_pdf = args.output
+    csv_paths = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
+
+    # Resolve output path: --name wins over --output; fall back to default
+    _output_dir = os.path.join(_here, "output")
+    if args.name:
+        fname = args.name if args.name.lower().endswith(".pdf") else f"{args.name}.pdf"
+        output_pdf = os.path.join(_output_dir, fname)
+    elif args.output:
+        output_pdf = args.output
+    else:
+        output_pdf = os.path.join(_output_dir, "2026_MeetGreet_NameTags.pdf")
     source_pdf   = os.path.join(_here, "template", "badge_template.pdf")
     template_png = os.path.join(_here, "template", "template_blank.png")
 
