@@ -1,6 +1,11 @@
 """
 WCSU Alumni Meet & Greet 2026 — Name Badge Generator
-Reads registrants.csv and produces a print-ready PDF with 6 badges per page.
+Reads registrants.csv and produces a print-ready PDF.
+
+Two badge formats supported (--type flag):
+  adhesive  [DEFAULT] — Avery 5395 adhesive labels, 8-up (2×4), 3-3/8" × 2-1/3"
+  paper               — WCSU paper badge template, 6-up (2×3), 4-1/4" × 3-2/3"
+
 Colors correspond to the 4 WCSU schools.
 """
 
@@ -42,6 +47,35 @@ BADGE_SLOTS = [
 
 LINE_LEADING = 20   # pt between text baselines
 TEXT_AREA_WIDTH = 250  # max text width within badge cell (~28pt padding each side)
+
+# ── Avery 5395 Adhesive Badge Layout ─────────────────────────────────────────
+# Template: docs/Avery5395AdhesiveNameBadges.pdf
+# 2 cols × 4 rows on US Letter; each badge 243 × 167.976 pt (3-3/8" × 2-1/3")
+# Measurements extracted directly from PDF rect objects (pdfplumber).
+#
+# Column x-centers: left=171, right=441
+# Row cell_top values (reportlab y, bottom-left origin): 751.5 / 570.05 / 388.55 / 207.1
+#
+# Design: full-width colored header band (school color, 40pt) at top of each
+# badge with white WCSU + event text; name/school/occ centered in white area below.
+
+AVERY_BADGE_W  = 243.0      # pt — badge cell width
+AVERY_BADGE_H  = 167.976    # pt — badge cell height
+AVERY_HEADER_H = 40         # pt — colored school band at top of each badge
+AVERY_TEXT_W   = 218        # pt — max text width (243 − 2×12.5 side margins)
+
+# (cx, cell_top) pairs — cell_top is the reportlab y of the top edge of each badge.
+# Ordered top-to-bottom, left-to-right (same order as the physical sheet).
+AVERY_SLOTS = [
+    {"cx": 171, "cell_top": 751.5},   # row 0, col 0
+    {"cx": 441, "cell_top": 751.5},   # row 0, col 1
+    {"cx": 171, "cell_top": 570.05},  # row 1, col 0
+    {"cx": 441, "cell_top": 570.05},  # row 1, col 1
+    {"cx": 171, "cell_top": 388.55},  # row 2, col 0
+    {"cx": 441, "cell_top": 388.55},  # row 2, col 1
+    {"cx": 171, "cell_top": 207.1},   # row 3, col 0
+    {"cx": 441, "cell_top": 207.1},   # row 3, col 1
+]
 
 # ── WCSU School colors ────────────────────────────────────────────────────────
 SCHOOL_COLORS = {
@@ -384,6 +418,84 @@ def generate_badges_pdf(registrants, template_png, output_pdf):
     c.save()
     print(f"✓ Generated {page_count} pages for {len(badges)} badges → {output_pdf}")
 
+
+# ── Avery 5395 adhesive badge generator ──────────────────────────────────────
+def generate_adhesive_badges_pdf(registrants, template_png, output_pdf):
+    """Generate Avery 5395 adhesive name badge PDF — 8 badges per page.
+
+    Each badge has a full-width colored header band (school color) at the top
+    with white WCSU / event text, and the name / school / occupation centered
+    in the white area below. No separate artwork template is needed — the Avery
+    cut-guide PDF is used only as the page background (thin outlines).
+    """
+    template_img = ImageReader(template_png)
+    c = canvas.Canvas(output_pdf, pagesize=letter)
+
+    # ── PDF metadata ──────────────────────────────────────────────────────────
+    c.setTitle("Meet and Greet Name Tags")
+    c.setAuthor("WCSU Alumni Association")
+    c.setSubject("WCSU Alumni Association Meet & Greet — March 25, 2026")
+    c.setCreator("WCSU Badge Generator")
+
+    badges = [build_badge_data(r) for r in registrants]
+
+    # 8 badges per page (2 cols × 4 rows)
+    page_count = (len(badges) + 7) // 8
+    for page_idx in range(page_count):
+        batch = badges[page_idx * 8: page_idx * 8 + 8]
+
+        # Draw Avery template background (cut-guide outlines)
+        c.drawImage(template_img, 0, 0, width=PAGE_W, height=PAGE_H,
+                    preserveAspectRatio=True)
+
+        for i, badge in enumerate(batch):
+            slot     = AVERY_SLOTS[i]
+            cx       = slot["cx"]
+            cell_top = slot["cell_top"]
+            x0       = cx - AVERY_BADGE_W / 2   # left edge of badge cell
+
+            # ── Colored header band ───────────────────────────────────────────
+            c.setFillColor(badge["color"])
+            c.setStrokeColor(badge["color"])
+            c.rect(x0, cell_top - AVERY_HEADER_H,
+                   AVERY_BADGE_W, AVERY_HEADER_H, fill=1, stroke=0)
+
+            # ── Header text (white) ───────────────────────────────────────────
+            c.setFillColor(white)
+            c.setFont("Helvetica-Bold", 11)
+            c.drawCentredString(cx, cell_top - 17, "WCSU")
+            c.setFont("Helvetica", 7.5)
+            c.drawCentredString(cx, cell_top - 30, "Alumni Meet & Greet 2026")
+
+            # ── Name ─────────────────────────────────────────────────────────
+            # Vertically center the content block in the white area below the band.
+            # Content block height ≈ 14 (name) + 17 (school leading) + 15 (occ leading) = 46 pt
+            # White area = AVERY_BADGE_H − AVERY_HEADER_H ≈ 128 pt
+            # Top padding = (128 − 46) / 2 ≈ 41 pt → name baseline at cell_top − 40 − 41 − 0
+            # (subtract font ascender ~14 to land baseline where text visually centers)
+            name_y = cell_top - AVERY_HEADER_H - 55   # ≈ center of white area
+            c.setFillColor(HexColor("#1B3A6B"))
+            fit_text(c, badge["name"], cx, name_y,
+                     AVERY_TEXT_W, "Helvetica-Bold", max_size=14, min_size=7)
+
+            # ── School / type line ────────────────────────────────────────────
+            type_y = name_y - 17
+            c.setFillColor(HexColor("#1B3A6B"))
+            wrap_and_draw(c, badge["type"], cx, type_y,
+                          AVERY_TEXT_W, "Helvetica", 9, 11)
+
+            # ── Occupation ────────────────────────────────────────────────────
+            occ_y = type_y - 14
+            c.setFillColor(HexColor("#444444"))
+            wrap_and_draw(c, badge["occ"], cx, occ_y,
+                          AVERY_TEXT_W, "Helvetica", 8.5, 10)
+
+        c.showPage()
+
+    c.save()
+    print(f"✓ Generated {page_count} pages for {len(badges)} adhesive badges → {output_pdf}")
+
+
 # ── Template renderer ─────────────────────────────────────────────────────────
 def ensure_template_png(template_png, source_pdf, page_index=0, scale=3.0):
     """Render template_blank.png from the source PDF if it doesn't exist."""
@@ -454,33 +566,54 @@ Both formats can be mixed using multiple --csv flags.
         )
     )
     parser.add_argument(
+        "--type", choices=["adhesive", "paper"], default="adhesive",
+        help=(
+            "Badge format to generate (default: adhesive). "
+            "'adhesive' → Avery 5395 labels, 8-up, 3-3/8\"×2-1/3\", requires docs/Avery5395AdhesiveNameBadges.pdf. "
+            "'paper'    → WCSU paper badge template, 6-up, 4-1/4\"×3-2/3\", requires template/badge_template.pdf."
+        )
+    )
+    parser.add_argument(
         "--output", metavar="PATH",
         help=(
-            "Full output path including directory "
-            "(default: output/2026_MeetGreet_NameTags.pdf). "
+            "Full output path including directory. "
+            "Default: output/2026_MeetGreet_NameTags_Adhesive.pdf (adhesive) "
+            "or output/2026_MeetGreet_NameTags_Paper.pdf (paper). "
             "Use --name instead if you just want a custom filename in output/."
         )
     )
     args = parser.parse_args()
 
-    csv_paths = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
-
-    # Resolve output path: --name wins over --output; fall back to default
+    csv_paths   = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
+    badge_type  = args.type
     _output_dir = os.path.join(_here, "output")
+
+    # Resolve output path: --name wins over --output; fall back to type-specific default
     if args.name:
         fname = args.name if args.name.lower().endswith(".pdf") else f"{args.name}.pdf"
         output_pdf = os.path.join(_output_dir, fname)
     elif args.output:
         output_pdf = args.output
     else:
-        output_pdf = os.path.join(_output_dir, "2026_MeetGreet_NameTags.pdf")
-    source_pdf   = os.path.join(_here, "template", "badge_template.pdf")
-    template_png = os.path.join(_here, "template", "template_blank.png")
+        default_name = (
+            "2026_MeetGreet_NameTags_Adhesive.pdf" if badge_type == "adhesive"
+            else "2026_MeetGreet_NameTags_Paper.pdf"
+        )
+        output_pdf = os.path.join(_output_dir, default_name)
 
     # Ensure output directory exists (gitignored, so not always present after a fresh clone)
     os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
 
-    ensure_template_png(template_png, source_pdf)
     registrants = load_registrants(csv_paths)
     print(f"Loaded {len(registrants)} unique registrants")
-    generate_badges_pdf(registrants, template_png, output_pdf)
+
+    if badge_type == "adhesive":
+        avery_source_pdf = os.path.join(_here, "docs", "Avery5395AdhesiveNameBadges.pdf")
+        avery_png        = os.path.join(_here, "template", "avery_blank.png")
+        ensure_template_png(avery_png, avery_source_pdf)
+        generate_adhesive_badges_pdf(registrants, avery_png, output_pdf)
+    else:
+        paper_source_pdf = os.path.join(_here, "template", "badge_template.pdf")
+        paper_png        = os.path.join(_here, "template", "template_blank.png")
+        ensure_template_png(paper_png, paper_source_pdf)
+        generate_badges_pdf(registrants, paper_png, output_pdf)
