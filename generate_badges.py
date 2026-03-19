@@ -474,8 +474,8 @@ def generate_adhesive_badges_pdf(registrants, template_png, output_pdf, logo_png
 
             # ── "Alumni Meet & Greet 2026" — top of header, white ────────────
             c.setFillColor(white)
-            c.setFont("Helvetica", 7.5)
-            c.drawCentredString(cx, cell_top - 12, "Alumni Meet & Greet 2026")
+            c.setFont("Helvetica", 9)
+            c.drawCentredString(cx, cell_top - 13, "Alumni Meet & Greet 2026")
 
             # ── Attendee name — lower part of header, white bold ─────────────
             c.setFillColor(white)
@@ -501,13 +501,16 @@ def generate_adhesive_badges_pdf(registrants, template_png, output_pdf, logo_png
                             mask="auto", preserveAspectRatio=True)
 
             # ── School / type line ────────────────────────────────────────────
-            type_y = logo_btm_y - 8
+            # 14pt gap below logo (was 8) — pushes text block down into white area.
+            type_y = logo_btm_y - 14
             c.setFillColor(HexColor("#1B3A6B"))
-            wrap_and_draw(c, badge["type"], cx, type_y,
-                          AVERY_TEXT_W, "Helvetica", 11, 13)
+            next_y = wrap_and_draw(c, badge["type"], cx, type_y,
+                                   AVERY_TEXT_W, "Helvetica", 11, 13)
 
             # ── Occupation ────────────────────────────────────────────────────
-            occ_y = type_y - 16
+            # 19pt leading from type baseline (was 16); use next_y from wrap so
+            # a wrapped type line never collides with occupation text.
+            occ_y = next_y - 6
             c.setFillColor(HexColor("#444444"))
             wrap_and_draw(c, badge["occ"], cx, occ_y,
                           AVERY_TEXT_W, "Helvetica", 10, 12)
