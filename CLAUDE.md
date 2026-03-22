@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project auto-generates print-ready name badge PDFs for the **WCSU Alumni Association Meet & Greet** event (March 25, 2026). It reads a Google Sheets–exported CSV of event registrants and produces a 6-up badge layout on letter-size pages, with color-coded circles indicating each attendee's WCSU school.
+This project auto-generates print-ready name badge PDFs for the **WCSU Alumni Association Meet & Greet** event (March 25, 2026). It reads one or more CSV files (event registrant exports or class rosters) and produces either Avery 5395 adhesive labels (default, 8-up) or a 6-up paper badge layout, with color-coded school affiliation per attendee.
 
 ---
 
@@ -10,14 +10,20 @@ This project auto-generates print-ready name badge PDFs for the **WCSU Alumni As
 
 | File | Purpose |
 |---|---|
-| `generate_badges.py` | Main script — reads CSV, maps schools, outputs PDF |
-| `data/registrants.csv` | Registrant data exported from Google Sheets (gitignored — PII) |
+| `generate_badges.py` | Main script — reads CSV(s), maps schools, outputs PDF |
+| `generate_blank_badges.py` | Walk-in blank badge sheets — one page per school color, no names, for hand-writing at event |
+| `convert_classlist.py` | Convert an xlsx class roster to badge-generator CSV format |
 | `requirements.txt` | Python dependencies |
-| `template/badge_template.pdf` | Single-page blank badge template extracted from the original 54-page PDF (~140 KB, committed) |
-| `template/template_blank.png` | Rendered from source PDF on first run (gitignored — auto-generated) |
-| `output/2026_MeetGreet_NameTags.pdf` | Output — regenerated each run (gitignored) |
-| `docs/sample_badge.png` | Example badge image used in README |
+| `data/registrants.csv` | Registrant data exported from Google Sheets (gitignored — PII) |
+| `template/badge_template.pdf` | Single-page blank paper badge template (~140 KB, committed) |
+| `template/wcsu_aa_logo.png` | WCSU Alumni Association logo — 258×75px RGBA (committed) |
+| `template/template_blank.png` | Rendered from badge_template.pdf on first run (gitignored — auto-generated) |
+| `template/avery_blank.png` | Rendered from Avery5395AdhesiveNameBadges.pdf on first run (gitignored — auto-generated) |
+| `docs/Avery5395AdhesiveNameBadges.pdf` | Avery 5395 blank template used to render avery_blank.png (committed) |
+| `docs/sample_badge.png` | Example adhesive badge image used in README |
+| `docs/sample_badge_paper.png` | Example paper badge image used in README |
 | `docs/badge_color_legend.png` | Color legend grid used in README |
+| `output/` | Generated PDFs — regenerated each run (gitignored) |
 
 ---
 
@@ -25,31 +31,108 @@ This project auto-generates print-ready name badge PDFs for the **WCSU Alumni As
 
 ### PDF Generation Pipeline
 
-1. **`ensure_template_png(template_png, source_pdf)`** — renders `template_blank.png` from page index 2 of the source PDF at 3× scale if the PNG doesn't already exist
-2. **`load_registrants(csv_path)`** — reads CSV with UTF-8-BOM encoding, deduplicates by email (or first+last name if no email)
-3. **`build_badge_data(row)`** — extracts name, class year, school, and occupation from each CSV row
-4. **`detect_school(major, org, reg_type)`** — keyword-matches to one of 4 WCSU schools or assigns Faculty/Community
-5. **`generate_badges_pdf(...)`** — uses reportlab to render 6 badges per page using the blank template PNG as background, then overlays colored circles and text
+1. **`ensure_template_png(template_png, source_pdf, page_index, scale)`** — renders a PNG background from a source PDF at 3× scale if the PNG doesn't exist or is zero-bytes. Called for both badge formats before rendering.
+2. **`load_registrants(csv_paths)`** — reads one or more CSVs (UTF-8-BOM), auto-detects format, deduplicates globally by email (or first+last name if no email), prints per-file counts.
+3. **`_detect_format(fieldnames)`** — returns `'event'` or `'classlist'` based on column headers.
+4. **`_normalize_row(row, fmt)`** — converts either CSV format into the canonical internal dict; collapses N/A sentinels to empty string via `_clean()`.
+5. **`build_badge_data(row)`** — extracts name line (with `'YY` graduation year suffix for alumni), school key, school label, color, type string, and occupation line.
+6. **`detect_school(major, org, reg_type)`** — keyword-matches `Class / Major` and `Community Business/Organization` to assign a school color key.
+7. **`generate_adhesive_badges_pdf(...)`** — renders 8-up Avery 5395 adhesive badges (DEFAULT). Each badge has a full-width colored school header band with white name text, WCSU AA logo, and school/occupation lines below.
+8. **`generate_badges_pdf(...)`** — renders 6-up paper badges on the WCSU template background. Each badge has a colored circle + name/school/occ text.
 
-### Template Background
+### Template Auto-Rendering
 
-The blank template is `template/badge_template.pdf` — a single-page PDF extracted from page 3 of the original 54-page event file (~140 KB vs ~8.5 MB). It is rendered to `template_blank.png` at 3× scale (1836×2376 px) automatically by `ensure_template_png()` on first run (`page_index=0`). This PNG is embedded as the background in each generated page via reportlab's `drawImage`.
+Both formats auto-render their background PNG from a committed source PDF on first run:
 
-`template_blank.png` does not need to be committed to the repo — it is regenerated automatically if missing. If the template changes, replace `badge_template.pdf` with the new single-page extract, delete `template_blank.png`, and re-run.
+| Format | Source PDF | Output PNG | Page index |
+|---|---|---|---|
+| Adhesive | `docs/Avery5395AdhesiveNameBadges.pdf` | `template/avery_blank.png` | 0 |
+| Paper | `template/badge_template.pdf` | `template/template_blank.png` | 0 |
 
-### Badge Layout (PDF points, reportlab origin = bottom-left)
+`ensure_template_png()` checks both `os.path.exists()` and `os.path.getsize() > 0` — a zero-byte file triggers re-render. If the template changes, replace the source PDF and delete the PNG; it regenerates automatically.
 
-Page size: 612 × 792 pt (US Letter)
+### CLI Flags (`generate_badges.py`)
+
+```
+--csv PATH        Path to a registrant CSV. Repeat for multiple files.
+                  Default: data/registrants.csv
+                  Both event and classlist formats can be mixed.
+
+--type TYPE       Badge format: adhesive (default) or paper
+                    adhesive → Avery 5395, 8-up, 3-3/8"×2-1/3"
+                    paper    → WCSU template, 6-up, 4-1/4"×3-2/3"
+
+--name FILENAME   Output filename — saved to output/ automatically.
+                  .pdf extension added if omitted.
+                  Example: --name ACC306  → output/ACC306.pdf
+
+--output PATH     Full output path (overrides --name and default location).
+```
+
+Default output filenames (when neither `--name` nor `--output` is given):
+- Adhesive: `output/2026_MeetGreet_NameTags_Adhesive.pdf`
+- Paper: `output/2026_MeetGreet_NameTags_Paper.pdf`
+
+### Badge Layout — Paper (6-up)
+
+Page size: 612 × 792 pt (US Letter), reportlab origin = bottom-left
+
 Each badge cell: 306 × 264 pt (2 columns × 3 rows)
 
-| Element | Left Col X | Right Col X | Row 1 Y | Row 2 Y | Row 3 Y |
-|---|---|---|---|---|---|
-| Circle center | 162 | 450 | 621 | 395 | 185 |
-| Name baseline | 162 | 450 | 565 | 338 | 124 |
+Template has ~17.7pt left/right page margins; actual badge content width ≈ 288pt.
+True column centers: left = 162pt, right = 450pt.
 
-Template has ~17.7pt left/right page margins; actual badge width is 288pt (not 306pt). Column centers are 162pt and 450pt, not the naive 153/459.
+| Element | Left Col X | Right Col X | Row 1 Y (top) | Row 2 Y (mid) | Row 3 Y (bot) |
+|---|---|---|---|---|---|
+| Circle center `cy` | 162 | 450 | 621 | 395 | 185 |
+| Text top `text_top_rl` | 162 | 450 | 585 | 358 | 144 |
 
 Circle radius: 24 pt
+
+```python
+BADGE_SLOTS = [
+    {"cx": 162, "cy": 792 - 171, "text_top_rl": 792 - 207},
+    {"cx": 450, "cy": 792 - 171, "text_top_rl": 792 - 207},
+    {"cx": 162, "cy": 792 - 397, "text_top_rl": 792 - 434},
+    {"cx": 450, "cy": 792 - 397, "text_top_rl": 792 - 434},
+    {"cx": 162, "cy": 792 - 607, "text_top_rl": 792 - 648},
+    {"cx": 450, "cy": 792 - 607, "text_top_rl": 792 - 648},
+]
+```
+
+### Badge Layout — Adhesive (Avery 5395, 8-up)
+
+Each badge cell: 243 × 167.976 pt (3-3/8" × 2-1/3"), 2 cols × 4 rows.
+
+Column x-centers: left = 171pt, right = 441pt.
+
+```python
+AVERY_BADGE_W  = 243.0
+AVERY_BADGE_H  = 167.976
+AVERY_HEADER_H = 52        # colored school header band height
+AVERY_TEXT_W   = 218       # max text width (243 − 2×12.5 margins)
+AVERY_LOGO_W   = 185.0
+AVERY_LOGO_H   = round(AVERY_LOGO_W * 75 / 258, 1)   # ≈ 53.8 pt
+
+AVERY_SLOTS = [
+    {"cx": 171, "cell_top": 751.5},   # row 0, col 0
+    {"cx": 441, "cell_top": 751.5},   # row 0, col 1
+    {"cx": 171, "cell_top": 570.05},  # row 1, col 0
+    {"cx": 441, "cell_top": 570.05},  # row 1, col 1
+    {"cx": 171, "cell_top": 388.55},  # row 2, col 0
+    {"cx": 441, "cell_top": 388.55},  # row 2, col 1
+    {"cx": 171, "cell_top": 207.1},   # row 3, col 0
+    {"cx": 441, "cell_top": 207.1},   # row 3, col 1
+]
+```
+
+Adhesive badge layout (top → bottom within each cell):
+- Full-width colored header band (AVERY_HEADER_H = 52pt)
+  - "Meet & Greet 2026" in white 9pt at top
+  - Attendee name in white bold ~15pt below
+- WCSU Alumni Association logo (185×54pt, centered)
+- School / type line (Helvetica 11pt, navy)
+- Occupation line (Helvetica 10pt, dark gray)
 
 ### School Color Map
 
@@ -63,21 +146,96 @@ Circle radius: 24 pt
 | `community` | Community Guest | `#7F8C8D` | Gray |
 | `default` | Unmatched / ambiguous major | `#95A5A6` | Light Gray |
 
+### School Detection Logic
+
+`detect_school(major, org, reg_type)` — priority order:
+1. **Exact org match** — if `"ancell"` in combined text → Ancell; `"professional studies"` or `"dean"` → Professional; `"visual"` or `"performing"` → Visual
+2. **Faculty/Staff** — if `reg_type == "Faculty/Staff"` and no org match → `faculty`
+3. **Community** — if `reg_type == "Community"` → `community`
+4. **Keyword match** — VISUAL_KEYWORDS → PROFESSIONAL_KEYWORDS → ANCELL_KEYWORDS → ARTS_KEYWORDS (most-specific first)
+5. **Default** — gray if nothing matches
+
+Keyword lists in `generate_badges.py`:
+- `ANCELL_KEYWORDS` — accounting, finance, business, management, marketing, mis, mba, bba…
+- `ARTS_KEYWORDS` — biology, chemistry, nursing, psychology, computer science, cybersecurity…
+- `VISUAL_KEYWORDS` — graphic design, theater, music, dance, film, dima…
+- `PROFESSIONAL_KEYWORDS` — education, health administration, counseling, mha…
+
 ---
 
-## CSV Column Reference
+## CSV Format Reference
 
-The registrant CSV has these columns (note UTF-8-BOM header):
+Two layouts are auto-detected by their column headers.
 
-| Column | Used for |
-|---|---|
-| `Registration Options` | Alumni / Faculty/Staff / Student / Community |
-| `Attendee (First Name)` | Name line on badge |
-| `Attendee (Last Name)` | Name line on badge |
-| `Class / Major` | School detection + class year extraction |
-| `Community Business/Organization` | School detection (org name), community type line |
-| `Occupation / Position Title` | Third line on badge |
-| `Email` | Deduplication key |
+### Format A — Event registrant export (Google Sheets / Eventbrite)
+
+| Column | Required | Notes |
+|---|---|---|
+| `Attendee (First Name)` | ✅ | |
+| `Attendee (Last Name)` | ✅ | |
+| `Registration Options` | ✅ | `Alumni` / `Student` / `Faculty/Staff` / `Community` |
+| `Class / Major` | ✅ | Used for school color detection and graduation year |
+| `Email` | optional | Used for deduplication (preferred over name) |
+| `Community Business/Organization` | optional | Shown on badge for community/faculty guests |
+| `Occupation / Position Title` | optional | Third line on badge |
+
+### Format B — Class roster / simple list
+
+| Column | Required | Notes |
+|---|---|---|
+| `First Name` | ✅ | |
+| `Last Name` | ✅ | |
+| `Registration Options` | ✅ | Usually `Student` |
+| `Class / Major` | ✅ | e.g. `Ancell School of Business` |
+
+> N/A-like sentinels (`N/A`, `NA`, `None`, `-`, `TBD`, etc.) are automatically treated as blank by `_clean()`.
+
+---
+
+## Blank Badge Generator (`generate_blank_badges.py`)
+
+Produces blank badge sheets for walk-in attendees to write their names by hand at the event.
+
+- One page per school color (6 schools × 1 page = 6 pages per format)
+- Both adhesive (Avery 5395) and paper (WCSU template) formats supported
+- Each badge shows: colored header band (adhesive) or colored circle (paper) + WCSU AA logo — no name or text
+- School pages: Ancell (orange), Arts & Sciences (navy), Visual & Performing Arts (purple), Professional Studies (green), Faculty/Staff (gold), Community (gray)
+
+```bash
+# Adhesive blanks (default) — output/2026_MeetGreet_Blank_Adhesive.pdf
+python3 generate_blank_badges.py
+
+# Paper blanks — output/2026_MeetGreet_Blank_Paper.pdf
+python3 generate_blank_badges.py --type paper
+
+# Both formats at once
+python3 generate_blank_badges.py --type adhesive
+python3 generate_blank_badges.py --type paper
+```
+
+---
+
+## convert_classlist.py
+
+Converts an xlsx class roster (columns: First Name, Last Name, optionally Email) to badge-generator CSV format.
+
+```bash
+# Accounting class — Ancell (orange)
+python3 convert_classlist.py data/ClassListACC306.xlsx \
+  --major "Accounting" --output data/acc306_badges.csv
+
+# Nursing class — Arts & Sciences (navy)
+python3 convert_classlist.py data/ClassListNUR201.xlsx \
+  --major "Nursing" --output data/nur201_badges.csv
+
+# Faculty roster
+python3 convert_classlist.py data/FacultyList.xlsx \
+  --reg-type Faculty/Staff --org "School of Arts & Sciences"
+```
+
+`--major` controls badge color — pass the correct major/school name. Omitting it produces gray badges (with a warning). Auto-inference from filename was intentionally removed (wrong color is worse than gray).
+
+Column aliases recognized: `First Name`, `Firstname`, `Given Name`; `Last Name`, `Lastname`, `Surname`; `Email`, `E-mail`; `Major`, `Class`, `Class / Major`, `Program`, `Degree`; plus org and title aliases.
 
 ---
 
@@ -85,14 +243,16 @@ The registrant CSV has these columns (note UTF-8-BOM header):
 
 ### Regenerate badges from updated CSV
 ```bash
-source .venv/bin/activate        # macOS
+source .venv/bin/activate        # macOS / Linux
 # Place latest export at data/registrants.csv first
 python3 generate_badges.py
-# Output → output/2026_MeetGreet_NameTags.pdf
+# Output → output/2026_MeetGreet_NameTags_Adhesive.pdf (default)
+python3 generate_badges.py --type paper
+# Output → output/2026_MeetGreet_NameTags_Paper.pdf
 ```
 
 ### Fix a gray (unmatched) badge
-Update the registrant's `Class / Major` in `registrants.csv` with a more specific major, then re-run the script. No code changes needed.
+Update the registrant's `Class / Major` in the CSV with a more specific major (e.g. `"BA English"` instead of `"BA"`) and re-run. No code changes needed.
 
 ### Add a new school keyword
 Edit the relevant keyword list in `generate_badges.py`:
@@ -101,12 +261,13 @@ Edit the relevant keyword list in `generate_badges.py`:
 - `VISUAL_KEYWORDS` — art, design, theater, etc.
 - `PROFESSIONAL_KEYWORDS` — education, health admin, etc.
 
-### Adjust font sizes or text layout
+### Adjust font sizes or layout
 Key layout constants at the top of `generate_badges.py`:
-- `CIRCLE_R` — circle radius in PDF points
-- `LINE_LEADING` — vertical spacing between text lines
+- `CIRCLE_R` — circle radius in PDF points (paper format)
+- `LINE_LEADING` — vertical spacing between text baselines
 - `TEXT_AREA_WIDTH` — max text width before wrapping
-- Font sizes are in `generate_badges_pdf()` — `fit_text()` for name, `wrap_and_draw()` for type/occupation
+- `AVERY_HEADER_H` — colored band height for adhesive format
+- Font sizes are set inline in `generate_badges_pdf()` and `generate_adhesive_badges_pdf()` — `fit_text()` auto-scales for name, `wrap_and_draw()` wraps school/occ lines
 
 ### Change a school color
 Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` objects from reportlab.
@@ -115,18 +276,19 @@ Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` obj
 
 ## Known Edge Cases
 
-- **Duplicate registrants**: Deduplicated by lowercase email. If two rows share an email (e.g., a correction re-submission), only the first is kept.
-- **Multi-line occupations in CSV**: Newlines are collapsed; only the first segment is used.
-- **Very long names or titles**: `fit_text()` auto-scales down to a minimum of 8pt. `wrap_and_draw()` wraps at `TEXT_AREA_WIDTH`.
-- **Ambiguous majors** (e.g., `"BA"`, `"2019"`, typos): Assigned gray/default. Fix by updating `Class / Major` in the CSV.
+- **Duplicate registrants**: Deduplicated globally across all --csv files by lowercase email. If two rows share an email (e.g. a correction re-submission), only the first is kept. Falls back to `firstname_lastname` key if no email.
+- **Multi-line occupations in CSV**: Newlines collapsed; only the first segment is used. Roles separated by `/` or `;` also truncated to first.
+- **Very long names or titles**: `fit_text()` auto-scales down to a minimum of 7pt. `wrap_and_draw()` wraps at the respective `TEXT_W` constant.
+- **Ambiguous majors** (e.g. `"BA"`, `"2019"`, typos): Assigned gray/default. Fix by updating `Class / Major` in the CSV.
 - **Faculty in specific schools**: If the org field contains `"Ancell"` or `"Professional Studies"`, they get that school's color instead of dark gold.
+- **Alumni graduation years**: `extract_years()` handles both `'71` apostrophe-style and four-digit `1971` formats, and handles multiple years (e.g. `'71 & '98`).
 
 ---
 
 ## Environment
 
-- Python 3.10+
-- Key packages: `reportlab`, `pypdfium2`, `Pillow`, `pdfplumber`
+- Python 3.10–3.13 (3.13 recommended; 3.14+ not yet supported by all deps)
+- Key packages: `reportlab`, `pypdfium2`, `Pillow`, `openpyxl`
 - See `requirements.txt` for pinned versions
 
 ---
@@ -136,5 +298,7 @@ Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` obj
 - **Event**: WCSU Alumni Association Meet & Greet
 - **Date**: March 25, 2026
 - **Organizer contact**: Career Success Center, WCSU
-- **Template source**: `template/badge_template.pdf` (extracted from original 54-page event PDF, page 3)
-- **Registrant data source**: Google Sheets (exported as CSV before each print run)
+- **Venue**: Western Connecticut State University, Danbury, CT
+- **Registrant data source**: Google Sheets (export as CSV before each print run)
+- **Adhesive labels**: Avery 5395, 3-3/8" × 2-1/3", 8 per sheet
+- **Paper badges**: Letter cardstock 65–80 lb, cut along grid lines after printing
