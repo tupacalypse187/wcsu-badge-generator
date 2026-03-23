@@ -599,10 +599,9 @@ def generate_blank_adhesive_pdf(template_png, output_pdf, logo_png=None):
                             width=AVERY_LOGO_W, height=AVERY_LOGO_H,
                             mask="auto", preserveAspectRatio=True)
 
-            # School label — below logo, navy
+            # School label — below logo, navy (fit_text caps at 15pt, scales down if needed)
             c.setFillColor(HexColor("#1B3A6B"))
-            c.setFont("Helvetica", 10)
-            c.drawCentredString(cx, logo_btm_y - 14, label)
+            fit_text(c, label, cx, logo_btm_y - 14, AVERY_TEXT_W, "Helvetica", max_size=15, min_size=8)
 
         c.showPage()
 
