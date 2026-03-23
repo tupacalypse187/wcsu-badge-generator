@@ -253,6 +253,35 @@ Both `event` and `classlist` CSV formats can be freely mixed.
 
 ---
 
+## ✍️ Workflow 5 — Blank Walk-In Badge Sheets
+
+For attendees who register at the door, print blank badge sheets ahead of time — one page per school color. Each badge shows the colored header/circle and WCSU AA logo with a write-in line. No CSV needed.
+
+```bash
+# macOS / Linux
+# Adhesive blanks (default) — Avery 5395, 8 per sheet
+python3 generate_badges.py --blank
+
+# Paper blanks — WCSU template, 6 per sheet
+python3 generate_badges.py --blank --type paper
+```
+
+```powershell
+# Windows (PowerShell)
+python generate_badges.py --blank
+python generate_badges.py --blank --type paper
+```
+
+Output files:
+- `output/2026_MeetGreet_Blank_Adhesive.pdf` — 6 pages, 8 badges per page (48 total)
+- `output/2026_MeetGreet_Blank_Paper.pdf` — 6 pages, 6 badges per page (36 total)
+
+Pages are in this order: Ancell (orange) → Arts & Sciences (navy) → Visual & Performing Arts (purple) → Professional Studies (green) → Faculty/Staff (gold) → Community (gray).
+
+Use `--name` or `--output` to override the default filename just like named badge runs.
+
+---
+
 ## 🏷 CSV Format Reference
 
 Two layouts are auto-detected by their column headers.

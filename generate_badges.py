@@ -103,6 +103,17 @@ SCHOOL_LABELS = {
     "default":      "",
 }
 
+# Ordered list used by the blank badge generator (one page per school).
+# Intentionally excludes 'default' — walk-in blanks only cover the 6 real categories.
+SCHOOLS_ORDERED = [
+    ("ancell",       HexColor("#E8702A"), "Ancell School of Business"),
+    ("arts",         HexColor("#1B3A6B"), "School of Arts & Sciences"),
+    ("visual",       HexColor("#8E44AD"), "School of Visual & Performing Arts"),
+    ("professional", HexColor("#27AE60"), "School of Professional Studies"),
+    ("faculty",      HexColor("#D4AC0D"), "Faculty / Staff"),
+    ("community",    HexColor("#7F8C8D"), "Community Guest"),
+]
+
 # ── School detection ──────────────────────────────────────────────────────────
 ANCELL_KEYWORDS = [
     "accounting", "finance", "financial", "business", "management",
@@ -545,6 +556,101 @@ def ensure_template_png(template_png, source_pdf, page_index=0, scale=3.0):
     bitmap.to_pil().save(template_png)
     print(f"✓ Saved {os.path.basename(template_png)}")
 
+# ── Blank badge generators (walk-in sheets, one page per school) ──────────────
+def generate_blank_adhesive_pdf(template_png, output_pdf, logo_png=None):
+    """Avery 5395 blank sheets — 8 badges per page, one page per school color.
+
+    Each badge shows the colored header band with 'Meet & Greet 2026' and
+    the WCSU AA logo. The name area is blank for hand-writing at the event.
+    """
+    template_img = ImageReader(template_png)
+    logo_img = ImageReader(logo_png) if logo_png and os.path.exists(logo_png) else None
+
+    c = canvas.Canvas(output_pdf, pagesize=letter)
+    c.setTitle("WCSU Meet & Greet 2026 — Blank Walk-In Badges (Adhesive)")
+    c.setAuthor("WCSU Alumni Association")
+    c.setSubject("Blank adhesive name badges — walk-in attendees")
+    c.setCreator("WCSU Badge Generator")
+
+    for _key, color, label in SCHOOLS_ORDERED:
+        c.drawImage(template_img, 0, 0, width=PAGE_W, height=PAGE_H,
+                    preserveAspectRatio=True)
+
+        for slot in AVERY_SLOTS:
+            cx       = slot["cx"]
+            cell_top = slot["cell_top"]
+            x0       = cx - AVERY_BADGE_W / 2
+
+            # Colored header band
+            c.setFillColor(color)
+            c.rect(x0, cell_top - AVERY_HEADER_H,
+                   AVERY_BADGE_W, AVERY_HEADER_H, fill=1, stroke=0)
+
+            # "Meet & Greet 2026" — white, top of header
+            c.setFillColor(white)
+            c.setFont("Helvetica", 9)
+            c.drawCentredString(cx, cell_top - 13, "Meet & Greet 2026")
+
+            # Logo in white area
+            logo_top_y = cell_top - AVERY_HEADER_H - 10
+            logo_btm_y = logo_top_y - AVERY_LOGO_H
+            if logo_img:
+                c.drawImage(logo_img, cx - AVERY_LOGO_W / 2, logo_btm_y,
+                            width=AVERY_LOGO_W, height=AVERY_LOGO_H,
+                            mask="auto", preserveAspectRatio=True)
+
+            # School label — below logo, navy
+            c.setFillColor(HexColor("#1B3A6B"))
+            c.setFont("Helvetica", 10)
+            c.drawCentredString(cx, logo_btm_y - 14, label)
+
+        c.showPage()
+
+    c.save()
+    print(f"✓ Generated {len(SCHOOLS_ORDERED)} pages of blank adhesive badges → {output_pdf}")
+
+
+def generate_blank_paper_pdf(template_png, output_pdf):
+    """WCSU paper template blank sheets — 6 badges per page, one page per school color.
+
+    Each badge shows the colored circle and a write-in underline.
+    The template background already includes the WCSU AA logo.
+    """
+    template_img = ImageReader(template_png)
+
+    c = canvas.Canvas(output_pdf, pagesize=letter)
+    c.setTitle("WCSU Meet & Greet 2026 — Blank Walk-In Badges (Paper)")
+    c.setAuthor("WCSU Alumni Association")
+    c.setSubject("Blank paper name badges — walk-in attendees")
+    c.setCreator("WCSU Badge Generator")
+
+    for _key, color, label in SCHOOLS_ORDERED:
+        # Template background already includes logo
+        c.drawImage(template_img, 0, 0, width=PAGE_W, height=PAGE_H,
+                    preserveAspectRatio=True)
+
+        for slot in BADGE_SLOTS:
+            cx = slot["cx"]
+            cy = slot["cy"]
+            ty = slot["text_top_rl"]
+
+            # Colored circle
+            c.setFillColor(color)
+            c.setStrokeColor(HexColor("#1a1a1a"))
+            c.setLineWidth(1.5)
+            c.circle(cx, cy, CIRCLE_R, stroke=1, fill=1)
+
+            # School label — below name area
+            c.setFillColor(HexColor("#1B3A6B"))
+            c.setFont("Helvetica", 10)
+            c.drawCentredString(cx, ty - 20, label)
+
+        c.showPage()
+
+    c.save()
+    print(f"✓ Generated {len(SCHOOLS_ORDERED)} pages of blank paper badges → {output_pdf}")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import argparse
@@ -614,39 +720,71 @@ Both formats can be mixed using multiple --csv flags.
             "Use --name instead if you just want a custom filename in output/."
         )
     )
+    parser.add_argument(
+        "--blank", action="store_true",
+        help=(
+            "Generate blank walk-in badge sheets instead of name badges. "
+            "Produces one page per school color (6 pages total) with the colored "
+            "header/circle and logo but no name — for hand-writing at the event. "
+            "Use with --type to select adhesive (default) or paper format. "
+            "Default output: output/2026_MeetGreet_Blank_Adhesive.pdf or "
+            "output/2026_MeetGreet_Blank_Paper.pdf"
+        )
+    )
     args = parser.parse_args()
 
-    csv_paths   = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
     badge_type  = args.type
     _output_dir = os.path.join(_here, "output")
 
-    # Resolve output path: --name wins over --output; fall back to type-specific default
+    # Resolve output path: --name wins over --output; fall back to type+mode default
     if args.name:
         fname = args.name if args.name.lower().endswith(".pdf") else f"{args.name}.pdf"
         output_pdf = os.path.join(_output_dir, fname)
     elif args.output:
         output_pdf = args.output
     else:
-        default_name = (
-            "2026_MeetGreet_NameTags_Adhesive.pdf" if badge_type == "adhesive"
-            else "2026_MeetGreet_NameTags_Paper.pdf"
-        )
+        if args.blank:
+            default_name = (
+                "2026_MeetGreet_Blank_Adhesive.pdf" if badge_type == "adhesive"
+                else "2026_MeetGreet_Blank_Paper.pdf"
+            )
+        else:
+            default_name = (
+                "2026_MeetGreet_NameTags_Adhesive.pdf" if badge_type == "adhesive"
+                else "2026_MeetGreet_NameTags_Paper.pdf"
+            )
         output_pdf = os.path.join(_output_dir, default_name)
 
     # Ensure output directory exists (gitignored, so not always present after a fresh clone)
     os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
 
-    registrants = load_registrants(csv_paths)
-    print(f"Loaded {len(registrants)} unique registrants")
-
-    if badge_type == "adhesive":
-        avery_source_pdf = os.path.join(_here, "docs", "Avery5395AdhesiveNameBadges.pdf")
-        avery_png        = os.path.join(_here, "template", "avery_blank.png")
-        ensure_template_png(avery_png, avery_source_pdf)
-        logo_png = os.path.join(_here, "template", "wcsu_aa_logo.png")
-        generate_adhesive_badges_pdf(registrants, avery_png, output_pdf, logo_png=logo_png)
+    if args.blank:
+        # ── Blank walk-in sheets — no CSV needed ──────────────────────────────
+        if badge_type == "adhesive":
+            avery_source_pdf = os.path.join(_here, "docs", "Avery5395AdhesiveNameBadges.pdf")
+            avery_png        = os.path.join(_here, "template", "avery_blank.png")
+            ensure_template_png(avery_png, avery_source_pdf)
+            logo_png = os.path.join(_here, "template", "wcsu_aa_logo.png")
+            generate_blank_adhesive_pdf(avery_png, output_pdf, logo_png=logo_png)
+        else:
+            paper_source_pdf = os.path.join(_here, "template", "badge_template.pdf")
+            paper_png        = os.path.join(_here, "template", "template_blank.png")
+            ensure_template_png(paper_png, paper_source_pdf)
+            generate_blank_paper_pdf(paper_png, output_pdf)
     else:
-        paper_source_pdf = os.path.join(_here, "template", "badge_template.pdf")
-        paper_png        = os.path.join(_here, "template", "template_blank.png")
-        ensure_template_png(paper_png, paper_source_pdf)
-        generate_badges_pdf(registrants, paper_png, output_pdf)
+        # ── Named badges — load CSV(s) ─────────────────────────────────────────
+        csv_paths = args.csv if args.csv else [os.path.join(_here, "data", "registrants.csv")]
+        registrants = load_registrants(csv_paths)
+        print(f"Loaded {len(registrants)} unique registrants")
+
+        if badge_type == "adhesive":
+            avery_source_pdf = os.path.join(_here, "docs", "Avery5395AdhesiveNameBadges.pdf")
+            avery_png        = os.path.join(_here, "template", "avery_blank.png")
+            ensure_template_png(avery_png, avery_source_pdf)
+            logo_png = os.path.join(_here, "template", "wcsu_aa_logo.png")
+            generate_adhesive_badges_pdf(registrants, avery_png, output_pdf, logo_png=logo_png)
+        else:
+            paper_source_pdf = os.path.join(_here, "template", "badge_template.pdf")
+            paper_png        = os.path.join(_here, "template", "template_blank.png")
+            ensure_template_png(paper_png, paper_source_pdf)
+            generate_badges_pdf(registrants, paper_png, output_pdf)
