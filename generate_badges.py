@@ -591,13 +591,6 @@ def generate_blank_adhesive_pdf(template_png, output_pdf, logo_png=None):
             c.setFont("Helvetica", 9)
             c.drawCentredString(cx, cell_top - 13, "Meet & Greet 2026")
 
-            # Subtle write-in underline in header
-            c.setStrokeColor(HexColor("#FFFFFF60"))
-            c.setLineWidth(0.5)
-            underline_w = AVERY_TEXT_W * 0.75
-            c.line(cx - underline_w / 2, cell_top - 36,
-                   cx + underline_w / 2, cell_top - 36)
-
             # Logo in white area
             logo_top_y = cell_top - AVERY_HEADER_H - 10
             logo_btm_y = logo_top_y - AVERY_LOGO_H
@@ -647,15 +640,10 @@ def generate_blank_paper_pdf(template_png, output_pdf):
             c.setLineWidth(1.5)
             c.circle(cx, cy, CIRCLE_R, stroke=1, fill=1)
 
-            # Write-in underline
-            c.setStrokeColor(HexColor("#333333"))
-            c.setLineWidth(0.75)
-            c.line(cx - 100, ty - 2, cx + 100, ty - 2)
-
-            # School label
+            # School label — pushed lower to leave room for hand-writing
             c.setFillColor(HexColor("#1B3A6B"))
-            c.setFont("Helvetica", 10)
-            c.drawCentredString(cx, ty - 20, label)
+            c.setFont("Helvetica", 15)
+            c.drawCentredString(cx, ty - 50, label)
 
         c.showPage()
 
