@@ -23,6 +23,7 @@ This project auto-generates print-ready name badge PDFs for the **WCSU Alumni As
 | `docs/sample_badge_paper.png` | Example paper badge image used in README |
 | `docs/badge_color_legend.png` | Color legend grid used in README |
 | `output/` | Generated PDFs — regenerated each run (gitignored) |
+| `.zread/` | AI-generated project wiki (Zread CLI) — run `zread generate` to update |
 
 ---
 
@@ -308,3 +309,26 @@ Edit the `SCHOOL_COLORS` dict in `generate_badges.py`. Colors are `HexColor` obj
 - **Registrant data source**: Google Sheets (export as CSV before each print run)
 - **Adhesive labels**: Avery 5395, 3-3/8" × 2-1/3", 8 per sheet
 - **Paper badges**: Letter cardstock 65–80 lb, cut along grid lines after printing
+
+---
+
+## Zread Wiki (`.zread/`)
+
+The `.zread/` directory holds an AI-generated project wiki created by the [Zread CLI](https://zread.ai/cli). It provides a browsable, structured breakdown of the codebase across 27 topics.
+
+### Maintenance workflow
+
+```bash
+zread generate              # Generate or update the wiki
+zread browse                # Open in browser
+```
+
+- **Before committing updates:** prune old dated snapshots so the repo only contains the latest version:
+  ```bash
+  # Keep only the latest version, remove older snapshots
+  cd .zread/wiki/versions/
+  ls -1t | tail -n +2 | xargs rm -rf
+  cd -
+  ```
+- Git history tracks what changed between updates — no need to keep multiple dated snapshots in the working tree.
+- `.zread/wiki/drafts/` is gitignored (in-progress generation artifacts).

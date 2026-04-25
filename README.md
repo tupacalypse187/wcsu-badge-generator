@@ -66,6 +66,9 @@ wcsu-badge-generator/
 ├── data/
 │   └── registrants.csv                       # 📋 Registrant export from Google Sheets (gitignored — PII)
 │
+├── .zread/
+│   └── wiki/                                 # 📚 AI-generated project wiki (Zread CLI)
+│
 └── output/
     ├── 2026_MeetGreet_NameTags_Adhesive.pdf  # ✅ Adhesive output — print on Avery 5395 (gitignored)
     └── 2026_MeetGreet_NameTags_Paper.pdf     # ✅ Paper output — print on cardstock (gitignored)
@@ -378,3 +381,10 @@ If a badge shows gray, update `Class / Major` in the CSV and re-run:
 This project was originally built using [Claude in Cowork mode](https://claude.ai). The `CLAUDE.md` file provides full project context so Claude can pick up where it left off — including updating the script, adjusting colors, fixing school mappings, or regenerating from a fresh CSV.
 
 To resume work with Claude, simply open this project folder in Cowork and reference `CLAUDE.md`.
+
+---
+
+## 📚 Additional Documentation
+
+- [CLAUDE.md](CLAUDE.md) — Project instructions for Claude Code
+- [`.zread/wiki/`](.zread/wiki/) — AI-generated project wiki ([Zread CLI](https://zread.ai/cli))
