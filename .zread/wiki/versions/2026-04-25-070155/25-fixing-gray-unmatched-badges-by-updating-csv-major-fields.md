@@ -87,7 +87,7 @@ Once you know which `Class / Major` values are failing, determine which WCSU sch
 | Pre-Med / Pre-Law | School of Arts & Sciences | `"science"` or `"justice"` |
 | Health Sciences | School of Arts & Sciences | `"science"` |
 | Data Analytics | School of Arts & Sciences | `"science"` or `"applied"` |
-| Athletic Training | School of Professional Studies | `"health"` (if `"health administration"` matches) or consider adding keyword |
+| Athletic Training | School of Professional Studies | `"education"` or add `"athletic training"` to `PROFESSIONAL_KEYWORDS` |
 | Media Arts | School of Visual & Performing Arts | `"arts "` (with trailing space) |
 | Special Education | School of Professional Studies | `"education"` |
 
