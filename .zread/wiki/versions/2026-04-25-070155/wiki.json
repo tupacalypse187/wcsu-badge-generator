@@ -1,0 +1,213 @@
+{
+  "id": "2026-04-25-070155",
+  "generated_at": "2026-04-25T11:01:55.6892576Z",
+  "language": "en",
+  "pages": [
+    {
+      "slug": "1-overview-event-name-badge-pdf-generator-for-wcsu-alumni-association",
+      "title": "Overview: Event Name Badge PDF Generator for WCSU Alumni Association",
+      "file": "1-overview-event-name-badge-pdf-generator-for-wcsu-alumni-association.md",
+      "section": "Get Started",
+      "level": "Beginner"
+    },
+    {
+      "slug": "2-quick-start-environment-setup-and-first-badge-run",
+      "title": "Quick Start: Environment Setup and First Badge Run",
+      "file": "2-quick-start-environment-setup-and-first-badge-run.md",
+      "section": "Get Started",
+      "level": "Beginner"
+    },
+    {
+      "slug": "3-generating-adhesive-badges-from-google-sheets-csv",
+      "title": "Generating Adhesive Badges from Google Sheets CSV",
+      "file": "3-generating-adhesive-badges-from-google-sheets-csv.md",
+      "section": "Get Started",
+      "level": "Beginner"
+    },
+    {
+      "slug": "4-generating-paper-badges-on-wcsu-branded-template",
+      "title": "Generating Paper Badges on WCSU Branded Template",
+      "file": "4-generating-paper-badges-on-wcsu-branded-template.md",
+      "section": "Get Started",
+      "level": "Beginner"
+    },
+    {
+      "slug": "5-preparing-blank-walk-in-badge-sheets-for-on-site-registration",
+      "title": "Preparing Blank Walk-In Badge Sheets for On-Site Registration",
+      "file": "5-preparing-blank-walk-in-badge-sheets-for-on-site-registration.md",
+      "section": "Get Started",
+      "level": "Beginner"
+    },
+    {
+      "slug": "6-understanding-the-two-badge-formats-avery-5395-adhesive-vs-wcsu-paper-template",
+      "title": "Understanding the Two Badge Formats: Avery 5395 Adhesive vs. WCSU Paper Template",
+      "file": "6-understanding-the-two-badge-formats-avery-5395-adhesive-vs-wcsu-paper-template.md",
+      "section": "Deep Dive",
+      "level": "Beginner"
+    },
+    {
+      "slug": "7-school-color-coding-system-and-visual-legend",
+      "title": "School Color Coding System and Visual Legend",
+      "file": "7-school-color-coding-system-and-visual-legend.md",
+      "section": "Deep Dive",
+      "level": "Beginner"
+    },
+    {
+      "slug": "8-csv-format-reference-event-registrant-export-vs-class-roster",
+      "title": "CSV Format Reference: Event Registrant Export vs. Class Roster",
+      "file": "8-csv-format-reference-event-registrant-export-vs-class-roster.md",
+      "section": "Deep Dive",
+      "group": "CSV Data Pipeline",
+      "level": "Beginner"
+    },
+    {
+      "slug": "9-auto-detection-normalization-and-n-a-sentinel-handling",
+      "title": "Auto-Detection, Normalization, and N/A Sentinel Handling",
+      "file": "9-auto-detection-normalization-and-n-a-sentinel-handling.md",
+      "section": "Deep Dive",
+      "group": "CSV Data Pipeline",
+      "level": "Beginner"
+    },
+    {
+      "slug": "10-deduplication-strategy-across-multiple-csv-files",
+      "title": "Deduplication Strategy Across Multiple CSV Files",
+      "file": "10-deduplication-strategy-across-multiple-csv-files.md",
+      "section": "Deep Dive",
+      "group": "CSV Data Pipeline",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "11-keyword-based-school-assignment-algorithm-and-priority-rules",
+      "title": "Keyword-Based School Assignment Algorithm and Priority Rules",
+      "file": "11-keyword-based-school-assignment-algorithm-and-priority-rules.md",
+      "section": "Deep Dive",
+      "group": "School Detection Engine",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "12-registration-type-based-routing-alumni-student-faculty-community",
+      "title": "Registration Type-Based Routing: Alumni, Student, Faculty, Community",
+      "file": "12-registration-type-based-routing-alumni-student-faculty-community.md",
+      "section": "Deep Dive",
+      "group": "School Detection Engine",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "13-extending-keyword-lists-and-adding-new-school-mappings",
+      "title": "Extending Keyword Lists and Adding New School Mappings",
+      "file": "13-extending-keyword-lists-and-adding-new-school-mappings.md",
+      "section": "Deep Dive",
+      "group": "School Detection Engine",
+      "level": "Advanced"
+    },
+    {
+      "slug": "14-template-auto-rendering-pdf-to-png-conversion-via-pypdfium2",
+      "title": "Template Auto-Rendering: PDF-to-PNG Conversion via pypdfium2",
+      "file": "14-template-auto-rendering-pdf-to-png-conversion-via-pypdfium2.md",
+      "section": "Deep Dive",
+      "group": "PDF Generation Pipeline",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "15-avery-5395-adhesive-badge-layout-8-up-grid-coordinates-and-header-band-design",
+      "title": "Avery 5395 Adhesive Badge Layout: 8-Up Grid Coordinates and Header Band Design",
+      "file": "15-avery-5395-adhesive-badge-layout-8-up-grid-coordinates-and-header-band-design.md",
+      "section": "Deep Dive",
+      "group": "PDF Generation Pipeline",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "16-wcsu-paper-badge-layout-6-up-grid-colored-circles-and-template-background",
+      "title": "WCSU Paper Badge Layout: 6-Up Grid, Colored Circles, and Template Background",
+      "file": "16-wcsu-paper-badge-layout-6-up-grid-colored-circles-and-template-background.md",
+      "section": "Deep Dive",
+      "group": "PDF Generation Pipeline",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "17-text-rendering-auto-scaling-names-word-wrapping-and-font-management",
+      "title": "Text Rendering: Auto-Scaling Names, Word Wrapping, and Font Management",
+      "file": "17-text-rendering-auto-scaling-names-word-wrapping-and-font-management.md",
+      "section": "Deep Dive",
+      "group": "PDF Generation Pipeline",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "18-graduation-year-extraction-apostrophe-and-four-digit-format-parsing",
+      "title": "Graduation Year Extraction: Apostrophe and Four-Digit Format Parsing",
+      "file": "18-graduation-year-extraction-apostrophe-and-four-digit-format-parsing.md",
+      "section": "Deep Dive",
+      "group": "Badge Data Construction",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "19-name-line-assembly-with-alumni-year-suffixes",
+      "title": "Name Line Assembly with Alumni Year Suffixes",
+      "file": "19-name-line-assembly-with-alumni-year-suffixes.md",
+      "section": "Deep Dive",
+      "group": "Badge Data Construction",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "20-registration-type-display-logic-name-school-and-occupation-formatting",
+      "title": "Registration Type Display Logic: Name, School, and Occupation Formatting",
+      "file": "20-registration-type-display-logic-name-school-and-occupation-formatting.md",
+      "section": "Deep Dive",
+      "group": "Badge Data Construction",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "21-class-list-converter-transforming-xlsx-rosters-to-badge-generator-csv",
+      "title": "Class List Converter: Transforming Xlsx Rosters to Badge-Generator CSV",
+      "file": "21-class-list-converter-transforming-xlsx-rosters-to-badge-generator-csv.md",
+      "section": "Deep Dive",
+      "level": "Beginner"
+    },
+    {
+      "slug": "22-cli-interface-all-command-line-flags-and-output-path-resolution",
+      "title": "CLI Interface: All Command-Line Flags and Output Path Resolution",
+      "file": "22-cli-interface-all-command-line-flags-and-output-path-resolution.md",
+      "section": "Deep Dive",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "23-adjusting-layout-constants-font-sizes-circle-radius-and-line-spacing",
+      "title": "Adjusting Layout Constants: Font Sizes, Circle Radius, and Line Spacing",
+      "file": "23-adjusting-layout-constants-font-sizes-circle-radius-and-line-spacing.md",
+      "section": "Deep Dive",
+      "group": "Customization and Troubleshooting",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "24-changing-school-colors-in-the-school_colors-dictionary",
+      "title": "Changing School Colors in the SCHOOL_COLORS Dictionary",
+      "file": "24-changing-school-colors-in-the-school_colors-dictionary.md",
+      "section": "Deep Dive",
+      "group": "Customization and Troubleshooting",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "25-fixing-gray-unmatched-badges-by-updating-csv-major-fields",
+      "title": "Fixing Gray (Unmatched) Badges by Updating CSV Major Fields",
+      "file": "25-fixing-gray-unmatched-badges-by-updating-csv-major-fields.md",
+      "section": "Deep Dive",
+      "group": "Customization and Troubleshooting",
+      "level": "Beginner"
+    },
+    {
+      "slug": "26-known-edge-cases-long-names-duplicate-entries-multi-line-occupations-and-ambiguous-majors",
+      "title": "Known Edge Cases: Long Names, Duplicate Entries, Multi-Line Occupations, and Ambiguous Majors",
+      "file": "26-known-edge-cases-long-names-duplicate-entries-multi-line-occupations-and-ambiguous-majors.md",
+      "section": "Deep Dive",
+      "group": "Customization and Troubleshooting",
+      "level": "Advanced"
+    },
+    {
+      "slug": "27-print-day-guide-media-selection-scale-settings-and-per-sheet-counts",
+      "title": "Print Day Guide: Media Selection, Scale Settings, and Per-Sheet Counts",
+      "file": "27-print-day-guide-media-selection-scale-settings-and-per-sheet-counts.md",
+      "section": "Deep Dive",
+      "level": "Beginner"
+    }
+  ]
+}
